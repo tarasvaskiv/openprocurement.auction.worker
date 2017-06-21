@@ -62,8 +62,7 @@ class Auction(DBServiceMixin,
     def __init__(self, tender_id,
                  worker_defaults={},
                  auction_data={},
-                 lot_id=None,
-                 activate=False):
+                 lot_id=None):
         super(Auction, self).__init__()
         self.generate_request_id()
         self.tender_id = tender_id
@@ -78,7 +77,6 @@ class Auction(DBServiceMixin,
                 worker_defaults["TENDERS_API_VERSION"], tender_id
             )
         )
-        self.activate = activate
         if auction_data:
             self.debug = True
             LOGGER.setLevel(logging.DEBUG)
@@ -106,7 +104,6 @@ class Auction(DBServiceMixin,
 
     def schedule_auction(self):
         self.generate_request_id()
-        self.get_auction_document()
         self.get_auction_document()
         if self.debug:
             LOGGER.info("Get _auction_data from auction_document")

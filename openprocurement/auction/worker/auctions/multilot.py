@@ -117,6 +117,7 @@ def prepare_auction_document(self):
         {'_id': self.auction_doc_id,
          'stages': [],
          'tenderID': self._auction_data['data'].get('tenderID', ''),
+         'procurementMethodType': self._auction_data['data'].get('procurementMethodType', ''),
          'TENDERS_API_VERSION': self.worker_defaults['TENDERS_API_VERSION'],
          'initial_bids': [],
          'current_stage': -1,
