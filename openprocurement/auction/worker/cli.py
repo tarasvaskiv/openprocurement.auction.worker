@@ -5,6 +5,7 @@ monkey.patch_all()
 import argparse
 import logging.config
 import json
+import yaml
 import sys
 import os
 
@@ -33,7 +34,7 @@ def main():
     args = parser.parse_args()
 
     if os.path.isfile(args.auction_worker_config):
-        worker_defaults = json.load(open(args.auction_worker_config))
+        worker_defaults = yaml.load(open(args.auction_worker_config))
         if args.with_api_version:
             worker_defaults['TENDERS_API_VERSION'] = args.with_api_version
         if args.cmd != 'cleanup':
