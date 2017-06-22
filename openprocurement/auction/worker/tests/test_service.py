@@ -1,7 +1,7 @@
 import mock
 
 from openprocurement.auction.worker.auction import Auction
-from openprocurement.auction.worker.tests.base import auction
+from openprocurement.auction.worker.tests.base import auction, db
 
 
 class AuctionTest(Auction):
@@ -35,4 +35,3 @@ def test_fixture_get_auction_info(auction):
     auction.get_auction_info(prepare=False)
 
     assert auction.rounds_stages == [1, 4, 7]
-
