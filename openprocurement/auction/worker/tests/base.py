@@ -18,7 +18,7 @@ with open(worker_defaults_file_path) as stream:
     worker_defaults = yaml.load(stream)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def auction():
     # update_auctionPeriod(tender_file_path)
 
