@@ -1,10 +1,14 @@
 import json
+import logging
 import os
 import pytest
 import yaml
 import couchdb
 
+from StringIO import StringIO
+
 from openprocurement.auction.worker.auction import Auction
+from openprocurement.auction.worker.services import LOGGER
 
 PWD = os.path.dirname(os.path.realpath(__file__))
 # from openprocurement.auction.tests.main import update_auctionPeriod
@@ -42,3 +46,16 @@ def db(request):
         delete()
     server.create(name)
     request.addfinalizer(delete)
+
+
+class LogCapturer(object):
+    def __init__(self, logger):
+        self.log_capture_string = StringIO()
+        self.test_handler = logging.StreamHandler(self.log_capture_string)
+        self.test_handler.setLevel(logging.INFO)
+        logger.addHandler(self.test_handler)
+
+
+@pytest.fixture(scope='function')
+def logger():
+    return LogCapturer(LOGGER)

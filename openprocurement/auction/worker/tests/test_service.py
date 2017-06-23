@@ -1,4 +1,4 @@
-from openprocurement.auction.worker.tests.base import auction, db
+from openprocurement.auction.worker.tests.base import auction, db, logger
 
 # DBServiceTest
 
@@ -337,17 +337,23 @@ def test_approve_audit_info_on_announcement(auction, db):
     assert results['bids'][1]['bidder'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
 
 
-def test_upload_audit_file_with_document_service(auction, db):
+def test_upload_audit_file_with_document_service(auction, db, logger):
     from requests import Session as RequestsSession
     auction.session_ds = RequestsSession()
     auction.prepare_auction_document()
     auction.get_auction_info()
 
     res = auction.upload_audit_file_with_document_service()
+    assert res is None
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[3] == 'Audit log not approved.'
 
 
-def test_upload_audit_file_without_document_service(auction, db):
+def test_upload_audit_file_without_document_service(auction, db, logger):
     auction.prepare_auction_document()
     auction.get_auction_info()
 
     res = auction.upload_audit_file_without_document_service()
+    assert res is None
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[3] == 'Audit log not approved.'
