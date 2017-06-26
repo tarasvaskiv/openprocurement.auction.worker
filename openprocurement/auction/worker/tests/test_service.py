@@ -1,9 +1,13 @@
-from openprocurement.auction.worker.tests.base import auction, db, logger
+import pytest
 
+from couchdb import Database
+from couchdb.http import HTTPError
+
+from openprocurement.auction.worker.tests.base import auction, db, logger
 # DBServiceTest
 
 
-def test_get_auction_info_simple(auction):
+def test_get_auction_info_simple(auction, logger):
     assert auction.rounds_stages == []
     assert auction.mapping == {}
     assert auction.bidders_data == []
@@ -36,8 +40,11 @@ def test_get_auction_info_simple(auction):
     assert auction.bidders_data[1]['value']['amount'] == 480000.0
     assert auction.bidders_data[1]['id'] == '5675acc9232942e8940a034994ad883e'
 
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[0] == 'Bidders count: 2'
 
-def test_prepare_auction_document(auction, db):
+
+def test_prepare_auction_document(auction, db, mocker):
     assert auction.db.get(auction.auction_doc_id) is None
     auction.prepare_auction_document()
     auction_document = auction.db.get(auction.auction_doc_id)
@@ -59,22 +66,50 @@ def test_prepare_public_document(auction, db):
     assert res is not None
 
 
-def test_get_auction_document(auction, db):
+def test_get_auction_document(auction, db, mocker, logger):
     auction.prepare_auction_document()
     pub_doc = auction.db.get(auction.auction_doc_id)
     res = auction.get_auction_document()
     assert res == pub_doc
 
+    mock_db_get = mocker.patch.object(Database, 'get', autospec=True)
+    mock_db_get.side_effect = [
+        HTTPError('status code is >= 400'),
+        Exception('unhandled error message'),
+        res
+    ]
+    auction.get_auction_document()
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[3] == 'Error while get document: status code is >= 400'
+    assert log_strings[4] == 'Unhandled error: unhandled error message'
+    assert log_strings[5] == 'Get auction document {0} with rev {1}'.format(res['_id'], res['_rev'])
 
-def test_save_auction_document(auction, db):
+
+def test_save_auction_document(auction, db, mocker, logger):
     auction.prepare_auction_document()
     response = auction.save_auction_document()
     assert len(response) == 2
     assert response[0] == auction.auction_document['_id']
     assert response[1] == auction.auction_document['_rev']
 
+    mock_db_save = mocker.patch.object(Database, 'save', autospec=True)
+    mock_db_save.side_effect = [
+        HTTPError('status code is >= 400'),
+        Exception('unhandled error message'),
+        (u'UA-222222', u'test-revision'),
+    ]
+    auction.save_auction_document()
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+
+    assert 'Saved auction document UA-11111 with rev' in log_strings[1]
+    assert log_strings[3] == 'Error while save document: status code is >= 400'
+    assert log_strings[5] == 'Unhandled error: unhandled error message'
+    assert log_strings[7] == 'Saved auction document UA-222222 with rev test-revision'
+
+    assert mock_db_save.call_count == 3
 
 # StagesServiceTest
+
 
 def test_get_round_number(auction, db):
     auction.prepare_auction_document()
