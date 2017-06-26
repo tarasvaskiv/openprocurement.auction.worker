@@ -48,7 +48,7 @@ def db(request):
     request.addfinalizer(delete)
 
 
-class LogCapturer(object):
+class LogInterceptor(object):
     def __init__(self, logger):
         self.log_capture_string = StringIO()
         self.test_handler = logging.StreamHandler(self.log_capture_string)
@@ -58,4 +58,4 @@ class LogCapturer(object):
 
 @pytest.fixture(scope='function')
 def logger():
-    return LogCapturer(LOGGER)
+    return LogInterceptor(LOGGER)

@@ -1,11 +1,10 @@
-import pytest
-
 from couchdb import Database
 from couchdb.http import HTTPError
 
-from openprocurement.auction.worker.services import BiddersServiceMixin
 from openprocurement.auction.worker.auction import Auction
+from openprocurement.auction.worker.services import BiddersServiceMixin
 from openprocurement.auction.worker.tests.base import auction, db, logger
+
 # DBServiceTest
 
 
@@ -197,7 +196,6 @@ def test_end_bids_stage(auction, db, mocker, logger):
 
     mock_approve = mocker.patch.object(BiddersServiceMixin, 'approve_bids_information', autospec=True)
     mock_end_auction = mocker.patch.object(Auction, 'end_auction', autospec=True)
-    # auction.auction_document['stages'].append({'type': 'pre_announcement'})
     mock_approve.return_value = True
     auction.end_bids_stage(9)
 
