@@ -3,6 +3,8 @@ import pytest
 from couchdb import Database
 from couchdb.http import HTTPError
 
+from openprocurement.auction.worker.services import BiddersServiceMixin
+from openprocurement.auction.worker.auction import Auction
 from openprocurement.auction.worker.tests.base import auction, db, logger
 # DBServiceTest
 
@@ -182,7 +184,7 @@ def test_prepare_auction_stages_fast_forward(auction, db):
     assert results[1]['bidder_id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
 
 
-def test_end_bids_stage(auction, db):
+def test_end_bids_stage(auction, db, mocker, logger):
     auction.prepare_auction_document()
     auction.get_auction_info()
     auction.prepare_auction_stages_fast_forward()
@@ -192,6 +194,16 @@ def test_end_bids_stage(auction, db):
 
     assert auction.current_stage == 9
     assert auction.current_round == 3
+
+    mock_approve = mocker.patch.object(BiddersServiceMixin, 'approve_bids_information', autospec=True)
+    mock_end_auction = mocker.patch.object(Auction, 'end_auction', autospec=True)
+    # auction.auction_document['stages'].append({'type': 'pre_announcement'})
+    mock_approve.return_value = True
+    auction.end_bids_stage(9)
+
+    assert mock_end_auction.call_count == 1
+    assert mock_approve.call_count == 1
+
 
 
 def test_update_future_bidding_orders(auction, db):
