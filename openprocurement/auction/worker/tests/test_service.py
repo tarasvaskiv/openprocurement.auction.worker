@@ -205,7 +205,6 @@ def test_end_bids_stage(auction, db, mocker, logger):
     assert mock_approve.call_count == 1
 
 
-
 def test_update_future_bidding_orders(auction, db):
 
     test_bids = [
@@ -317,6 +316,7 @@ def test_approve_audit_info_on_bid_stage(auction, db):
         auction.auction_document["current_stage"]
     )
     auction.prepare_audit()
+    auction.auction_document["stages"][auction.current_stage]['changed'] = True
 
     auction.approve_audit_info_on_bid_stage()
 
