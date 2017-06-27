@@ -2,6 +2,7 @@ import pytest
 
 from couchdb import Database
 from couchdb.http import HTTPError
+from requests import Session
 
 from openprocurement.auction.worker.auction import Auction
 from openprocurement.auction.worker.services import BiddersServiceMixin
@@ -384,7 +385,7 @@ def test_approve_audit_info_on_announcement(auction, db):
     assert results['bids'][1]['bidder'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
 
 
-def test_upload_audit_file_with_document_service(auction, db, logger):
+def test_upload_audit_file_without_document_service(auction, db, logger, mocker):
     from requests import Session as RequestsSession
     auction.session_ds = RequestsSession()
     auction.prepare_auction_document()
@@ -392,11 +393,23 @@ def test_upload_audit_file_with_document_service(auction, db, logger):
 
     res = auction.upload_audit_file_with_document_service()
     assert res is None
+
+    mock_session_request = mocker.patch.object(Session, 'request', autospec=True)
+
+    mock_session_request.return_value.json.return_value = {
+        'data': {
+            'id': 'UA-11111'
+        }
+    }
+
+    res = auction.upload_audit_file_with_document_service('UA-11111')
+    assert res == 'UA-11111'
+
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert log_strings[3] == 'Audit log not approved.'
 
 
-def test_upload_audit_file_without_document_service(auction, db, logger):
+def test_upload_audit_file_with_document_service(auction, db, logger):
     auction.prepare_auction_document()
     auction.get_auction_info()
 
