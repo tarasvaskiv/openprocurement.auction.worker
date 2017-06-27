@@ -7,11 +7,11 @@ import couchdb
 
 from StringIO import StringIO
 
-from openprocurement.auction.worker.auction import Auction
+from openprocurement.auction.worker.auction import Auction, SCHEDULER, TIMEZONE
 from openprocurement.auction.worker.services import LOGGER
 
 PWD = os.path.dirname(os.path.realpath(__file__))
-# from openprocurement.auction.tests.main import update_auctionPeriod
+from openprocurement.auction.tests.main import update_auctionPeriod
 
 
 tender_file_path = os.path.join(PWD, "data/tender_data.json")
@@ -24,7 +24,7 @@ with open(worker_defaults_file_path) as stream:
 
 @pytest.fixture(scope="function")
 def auction():
-    # update_auctionPeriod(tender_file_path)
+    update_auctionPeriod(tender_file_path)
 
     return Auction(
         tender_id=tender_data['data']['tenderID'],
@@ -59,3 +59,8 @@ class LogInterceptor(object):
 @pytest.fixture(scope='function')
 def logger():
     return LogInterceptor(LOGGER)
+
+
+@pytest.fixture(scope='function')
+def scheduler():
+    return SCHEDULER

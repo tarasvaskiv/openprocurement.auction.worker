@@ -1,9 +1,11 @@
+import pytest
+
 from couchdb import Database
 from couchdb.http import HTTPError
 
 from openprocurement.auction.worker.auction import Auction
 from openprocurement.auction.worker.services import BiddersServiceMixin
-from openprocurement.auction.worker.tests.base import auction, db, logger
+from openprocurement.auction.worker.tests.base import auction, db, logger, scheduler
 
 # DBServiceTest
 
@@ -402,3 +404,138 @@ def test_upload_audit_file_without_document_service(auction, db, logger):
     assert res is None
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert log_strings[3] == 'Audit log not approved.'
+
+
+# WorkerTest
+
+@pytest.mark.worker
+def test_worker(auction, db, scheduler, logger):
+
+    auction.prepare_auction_document()
+
+    scheduler.start()
+    auction.schedule_auction()
+    auction.wait_to_end()
+    scheduler.shutdown()
+
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+
+    """
+    ['Bidders count: 2',
+     'Saved auction document UA-11111 with rev 1-e505e42c3fc2b1e5259fde558d74a351',
+     'Scheduler started',
+     'Get auction document UA-11111 with rev 1-e505e42c3fc2b1e5259fde558d74a351',
+     'Get _auction_data from auction_document',
+     'Bidders count: 2',
+     'Saved auction document UA-11111 with rev 2-fade9aa2875aace5b38d4d8b29d3b147',
+     'Added job "Start of Auction" to job store "default"',
+     'Added job "End of Pause Stage: [0 -> 1]" to job store "default"',
+     'Added job "End of Bids Stage: [1 -> 2]" to job store "default"',
+     'Added job "End of Bids Stage: [2 -> 3]" to job store "default"',
+     'Added job "End of Pause Stage: [3 -> 4]" to job store "default"',
+     'Added job "End of Bids Stage: [4 -> 5]" to job store "default"',
+     'Added job "End of Bids Stage: [5 -> 6]" to job store "default"',
+     'Added job "End of Pause Stage: [6 -> 7]" to job store "default"',
+     'Added job "End of Bids Stage: [7 -> 8]" to job store "default"',
+     'Added job "End of Bids Stage: [8 -> 9]" to job store "default"',
+     'Prepare server ...',
+     'Start server on 127.0.0.1:9010',
+     'Server mapping: UA-11111 -> http://127.0.0.1:9010/',
+     'Removed job Start of Auction',
+     'Running job "Start of Auction (trigger: date[2017-06-26 17:30:06 EEST], next run at: 2017-06-26 17:30:06 EEST)" (scheduled at 2017-06-26 17:30:06.894373+03:00)',
+     '---------------- Start auction ----------------',
+     'Bidders count: 2',
+     'Get auction document UA-11111 with rev 2-fade9aa2875aace5b38d4d8b29d3b147',
+     'Saved auction document UA-11111 with rev 3-7912a4424a3f360a88d6f2a9b432a4bc',
+     'Job "Start of Auction (trigger: date[2017-06-26 17:30:06 EEST], next run at: 2017-06-26 17:30:06 EEST)" executed successfully',
+     'Removed job End of Pause Stage: [0 -> 1]',
+     'Running job "End of Pause Stage: [0 -> 1] (trigger: date[2017-06-26 17:35:06 EEST], next run at: 2017-06-26 17:35:06 EEST)" (scheduled at 2017-06-26 17:35:06.894373+03:00)',
+     '---------------- End First Pause ----------------',
+     'Get auction document UA-11111 with rev 3-7912a4424a3f360a88d6f2a9b432a4bc',
+     'Saved auction document UA-11111 with rev 4-d06402c4a9fb382d031d59b71bb69dc0',
+     'Job "End of Pause Stage: [0 -> 1] (trigger: date[2017-06-26 17:35:06 EEST], next run at: 2017-06-26 17:35:06 EEST)" executed successfully',
+     'Removed job End of Bids Stage: [1 -> 2]',
+     'Running job "End of Bids Stage: [1 -> 2] (trigger: date[2017-06-26 17:37:06 EEST], next run at: 2017-06-26 17:37:06 EEST)" (scheduled at 2017-06-26 17:37:06.894373+03:00)',
+     'Get auction document UA-11111 with rev 4-d06402c4a9fb382d031d59b71bb69dc0',
+     '---------------- End Bids Stage ----------------',
+     '---------------- Start stage 2 ----------------',
+     'Saved auction document UA-11111 with rev 5-2ae211f857991f66a69ccd1fc031c890',
+     'Job "End of Bids Stage: [1 -> 2] (trigger: date[2017-06-26 17:37:06 EEST], next run at: 2017-06-26 17:37:06 EEST)" executed successfully',
+     'Removed job End of Bids Stage: [2 -> 3]',
+     'Running job "End of Bids Stage: [2 -> 3] (trigger: date[2017-06-26 17:39:06 EEST], next run at: 2017-06-26 17:39:06 EEST)" (scheduled at 2017-06-26 17:39:06.894373+03:00)',
+     'Get auction document UA-11111 with rev 5-2ae211f857991f66a69ccd1fc031c890',
+     '---------------- End Bids Stage ----------------',
+     '---------------- Start stage 3 ----------------',
+     'Saved auction document UA-11111 with rev 6-37b1f136a422b103ac2d7702b6e26033',
+     'Job "End of Bids Stage: [2 -> 3] (trigger: date[2017-06-26 17:39:06 EEST], next run at: 2017-06-26 17:39:06 EEST)" executed successfully',
+     'Removed job End of Pause Stage: [3 -> 4]',
+     'Running job "End of Pause Stage: [3 -> 4] (trigger: date[2017-06-26 17:41:06 EEST], next run at: 2017-06-26 17:41:06 EEST)" (scheduled at 2017-06-26 17:41:06.894373+03:00)',
+     'Get auction document UA-11111 with rev 6-37b1f136a422b103ac2d7702b6e26033',
+     'Saved auction document UA-11111 with rev 7-58a0796ed6aa5d950f8d38315ba44b5e',
+     '---------------- Start stage 4 ----------------',
+     'Job "End of Pause Stage: [3 -> 4] (trigger: date[2017-06-26 17:41:06 EEST], next run at: 2017-06-26 17:41:06 EEST)" executed successfully',
+     'Removed job End of Bids Stage: [4 -> 5]',
+     'Running job "End of Bids Stage: [4 -> 5] (trigger: date[2017-06-26 17:43:06 EEST], next run at: 2017-06-26 17:43:06 EEST)" (scheduled at 2017-06-26 17:43:06.894373+03:00)',
+     'Get auction document UA-11111 with rev 7-58a0796ed6aa5d950f8d38315ba44b5e',
+     '---------------- End Bids Stage ----------------',
+     '---------------- Start stage 5 ----------------',
+     'Saved auction document UA-11111 with rev 8-c61c7e71a3b2d9a0ecc4b1b3720d855a',
+     'Job "End of Bids Stage: [4 -> 5] (trigger: date[2017-06-26 17:43:06 EEST], next run at: 2017-06-26 17:43:06 EEST)" executed successfully',
+     'Removed job End of Bids Stage: [5 -> 6]',
+     'Running job "End of Bids Stage: [5 -> 6] (trigger: date[2017-06-26 17:45:06 EEST], next run at: 2017-06-26 17:45:06 EEST)" (scheduled at 2017-06-26 17:45:06.894373+03:00)',
+     'Get auction document UA-11111 with rev 8-c61c7e71a3b2d9a0ecc4b1b3720d855a',
+     '---------------- End Bids Stage ----------------',
+     '---------------- Start stage 6 ----------------',
+     'Saved auction document UA-11111 with rev 9-fb48f13ccc2d53b9575344a7d2bb9ab0',
+     'Job "End of Bids Stage: [5 -> 6] (trigger: date[2017-06-26 17:45:06 EEST], next run at: 2017-06-26 17:45:06 EEST)" executed successfully',
+     'Removed job End of Pause Stage: [6 -> 7]',
+     'Running job "End of Pause Stage: [6 -> 7] (trigger: date[2017-06-26 17:47:06 EEST], next run at: 2017-06-26 17:47:06 EEST)" (scheduled at 2017-06-26 17:47:06.894373+03:00)',
+     'Get auction document UA-11111 with rev 9-fb48f13ccc2d53b9575344a7d2bb9ab0',
+     'Saved auction document UA-11111 with rev 10-2ecec75a5bed9af33fe8890ffee7b467',
+     '---------------- Start stage 7 ----------------',
+     'Job "End of Pause Stage: [6 -> 7] (trigger: date[2017-06-26 17:47:06 EEST], next run at: 2017-06-26 17:47:06 EEST)" executed successfully',
+     'Removed job End of Bids Stage: [7 -> 8]',
+     'Running job "End of Bids Stage: [7 -> 8] (trigger: date[2017-06-26 17:49:06 EEST], next run at: 2017-06-26 17:49:06 EEST)" (scheduled at 2017-06-26 17:49:06.894373+03:00)',
+     'Get auction document UA-11111 with rev 10-2ecec75a5bed9af33fe8890ffee7b467',
+     '---------------- End Bids Stage ----------------',
+     '---------------- Start stage 8 ----------------',
+     'Saved auction document UA-11111 with rev 11-ebeeacc65d7a10c376d0213bfad05ea1',
+     'Job "End of Bids Stage: [7 -> 8] (trigger: date[2017-06-26 17:49:06 EEST], next run at: 2017-06-26 17:49:06 EEST)" executed successfully',
+     'Removed job End of Bids Stage: [8 -> 9]',
+     'Running job "End of Bids Stage: [8 -> 9] (trigger: date[2017-06-26 17:51:06 EEST], next run at: 2017-06-26 17:51:06 EEST)" (scheduled at 2017-06-26 17:51:06.894373+03:00)',
+     'Get auction document UA-11111 with rev 11-ebeeacc65d7a10c376d0213bfad05ea1',
+     '---------------- End Bids Stage ----------------',
+     '---------------- Start stage 9 ----------------',
+     'Saved auction document UA-11111 with rev 12-d6e1adc65450d9963d71a2479be72248',
+     '---------------- End auction ----------------',
+     'Audit data: ',
+     ' id: UA-11111',
+     'tenderId: UA-11111',
+     'tender_id: UA-11111',
+     'timeline:',
+     '  auction_start:',
+     '    initial_bids:',
+     "    - {amount: 475000.0, bidder: d3ba84c66c9e4f34bfb33cc3c686f137, date: '2014-11-19T08:22:21.726234+00:00'}",
+     "    - {amount: 480000.0, bidder: 5675acc9232942e8940a034994ad883e, date: '2014-11-19T08:22:24.038426+00:00'}",
+     "    time: '2017-06-26T17:30:06.899074+03:00'",
+     '  results:',
+     '    bids:',
+     "    - {amount: 480000.0, bidder: 5675acc9232942e8940a034994ad883e, time: '2014-11-19T08:22:24.038426+00:00'}",
+     "    - {amount: 475000.0, bidder: d3ba84c66c9e4f34bfb33cc3c686f137, time: '2014-11-19T08:22:21.726234+00:00'}",
+     "    time: '2017-06-26T17:51:07.034734+03:00'",
+     '  round_1:',
+     "    turn_1: {bidder: 5675acc9232942e8940a034994ad883e, time: '2017-06-26T17:37:06.910031+03:00'}",
+     "    turn_2: {bidder: d3ba84c66c9e4f34bfb33cc3c686f137, time: '2017-06-26T17:39:06.909795+03:00'}",
+     '  round_2:',
+     "    turn_1: {bidder: 5675acc9232942e8940a034994ad883e, time: '2017-06-26T17:43:06.913207+03:00'}",
+     "    turn_2: {bidder: d3ba84c66c9e4f34bfb33cc3c686f137, time: '2017-06-26T17:45:06.910214+03:00'}",
+     '  round_3:',
+     "    turn_1: {bidder: 5675acc9232942e8940a034994ad883e, time: '2017-06-26T17:49:06.916444+03:00'}",
+     "    turn_2: {bidder: d3ba84c66c9e4f34bfb33cc3c686f137, time: '2017-06-26T17:51:06.906981+03:00'}",
+     '',
+     'Saved auction document UA-11111 with rev 13-4fc9e12e34d848faebfbf39ed37ae65e',
+     'Job "End of Bids Stage: [8 -> 9] (trigger: date[2017-06-26 17:51:06 EEST], next run at: 2017-06-26 17:51:06 EEST)" executed successfully',
+     'Stop auction worker',
+     'Scheduler has been shut down',
+     '']
+    """
