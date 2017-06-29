@@ -1,12 +1,12 @@
 import pytest
-
+from pytest_mock import mocker
 from couchdb import Database
 from couchdb.http import HTTPError
 from requests import Session
 
 from openprocurement.auction.worker.auction import Auction
 from openprocurement.auction.worker.services import BiddersServiceMixin
-from openprocurement.auction.worker.tests.base import auction, db, logger, scheduler
+from openprocurement.auction.worker.tests.base import auction, db, logger, scheduler, tender_data
 
 # DBServiceTest
 
@@ -417,6 +417,74 @@ def test_upload_audit_file_with_document_service(auction, db, logger):
     assert res is None
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert log_strings[3] == 'Audit log not approved.'
+
+
+# RequestIDService
+
+
+def test_generate_request_id(auction):
+    # Already set up in init method
+    auction.request_id = 0
+    auction.generate_request_id()
+    assert auction.request_id is not None
+    assert "auction-req-" in auction.request_id
+
+
+# DateTimeServiceMixin
+
+
+def test_convert_date(auction):
+    converted = auction.convert_datetime('2014-01-01')
+    assert converted is not None
+
+# BiddersServiceMixin
+
+
+def test_add_bid(auction, db):
+    test_bid = tender_data['data']['bids'][0]
+    auction.prepare_auction_document()
+    auction.get_auction_info()
+    assert auction._bids_data == {}
+    auction.add_bid(1, test_bid)
+    assert auction._bids_data is not None
+    assert auction._bids_data.keys() == [1]
+    round_num = 101
+    auction.add_bid(round_num, test_bid)
+    assert auction._bids_data.keys() == [1, 101]
+
+
+def test_filter_bids_keys(auction, db):
+    auction.prepare_auction_document()
+    auction.get_auction_info()
+    auction.prepare_auction_stages_fast_forward()
+    bids = auction.auction_document['results']
+    result = auction.filter_bids_keys(bids)
+    assert result is not None
+    bids[0]['test'] = 'test'
+    result = auction.filter_bids_keys(bids)
+    assert 'test' not in result[0]
+
+
+def test_set_auction_and_participation_urls(auction, mocker, logger):
+    mock_session_request = mocker.patch.object(auction.session, 'request', autospec=True)
+    mock_session_request.return_value.json.return_value = {
+        'data': {
+            'id': 'UA-11111'
+        }
+    }
+    mock_session_request.return_value.ok.return_value = True
+    auction.set_auction_and_participation_urls()
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[0] == "Set auction and participation urls for tender {}".format(auction.tender_id)
+    assert 'participationUrl' in log_strings[1]
+    assert 'auctionUrl' in log_strings[1]
+
+# TODO
+def test_approve_bids_information():
+    pass
+
+
+# PostAuctionServiceMixin: TODO
 
 
 # WorkerTest
