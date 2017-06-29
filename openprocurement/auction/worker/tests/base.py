@@ -42,11 +42,11 @@ test_organization = {
 }
 
 
-@pytest.fixture(scope="function")
+@pytest.yield_fixture(scope="function")
 def auction():
     update_auctionPeriod(tender_file_path)
 
-    return Auction(
+    yield Auction(
         tender_id=tender_data['data']['tenderID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
         auction_data=tender_data,
