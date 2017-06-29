@@ -10,5 +10,3 @@ BIDS_KEYS_FOR_COPY = ("bidder_id", "amount", "time")
 PLANNING_FULL = "full"
 PLANNING_PARTIAL_DB = "partial_db"
 PLANNING_PARTIAL_CRON = "partial_cron"
-
-

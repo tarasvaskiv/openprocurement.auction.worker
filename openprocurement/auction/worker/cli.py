@@ -10,12 +10,7 @@ import sys
 import os
 
 from openprocurement.auction.worker.auction import Auction, SCHEDULER
-
-
-PLANNING_FULL = "full"
-PLANNING_PARTIAL_DB = "partial_db"
-PLANNING_PARTIAL_CRON = "partial_cron"
-
+from openprocurement.auction.worker import constants as C
 
 
 def main():
@@ -29,7 +24,7 @@ def main():
     parser.add_argument('--with_api_version', type=str, help='Tender Api Version')
     parser.add_argument('--lot', type=str, help='Specify lot in tender', default=None)
     parser.add_argument('--planning_procerude', type=str, help='Override planning procerude',
-                        default=None, choices=[None, PLANNING_FULL, PLANNING_PARTIAL_DB, PLANNING_PARTIAL_CRON])
+                        default=None, choices=[None, C.PLANNING_FULL, C.PLANNING_PARTIAL_DB, C.PLANNING_PARTIAL_CRON])
 
     args = parser.parse_args()
 
