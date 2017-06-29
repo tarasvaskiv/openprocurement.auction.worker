@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import logging
 import os
@@ -7,12 +8,11 @@ import couchdb
 
 from StringIO import StringIO
 
-from openprocurement.auction.worker.auction import Auction, SCHEDULER, TIMEZONE
+from openprocurement.auction.worker.auction import Auction, SCHEDULER
 from openprocurement.auction.worker.services import LOGGER
-
-PWD = os.path.dirname(os.path.realpath(__file__))
 from openprocurement.auction.tests.main import update_auctionPeriod
 
+PWD = os.path.dirname(os.path.realpath(__file__))
 
 tender_file_path = os.path.join(PWD, "data/tender_data.json")
 worker_defaults_file_path = os.path.join(PWD, "data/auction_worker_defaults.yaml")
@@ -20,6 +20,26 @@ with open(tender_file_path) as data_file:
     tender_data = json.load(data_file)
 with open(worker_defaults_file_path) as stream:
     worker_defaults = yaml.load(stream)
+
+test_organization = {
+    "name": u"Державне управління справами",
+    "identifier": {
+        "scheme": u"UA-EDR",
+        "id": u"00037256",
+        "uri": u"http://www.dus.gov.ua/"
+    },
+    "address": {
+        "countryName": u"Україна",
+        "postalCode": u"01220",
+        "region": u"м. Київ",
+        "locality": u"м. Київ",
+        "streetAddress": u"вул. Банкова, 11, корпус 1"
+    },
+    "contactPoint": {
+        "name": u"Державне управління справами",
+        "telephone": u"0440000000"
+    }
+}
 
 
 @pytest.fixture(scope="function")
