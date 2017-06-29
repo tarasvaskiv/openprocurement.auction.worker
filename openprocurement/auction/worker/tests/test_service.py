@@ -483,12 +483,69 @@ def test_set_auction_and_participation_urls(auction, mocker, logger):
     assert 'auctionUrl' in log_strings[1]
 
 
-# TODO
-def test_approve_bids_information():
-    pass
+def test_approve_bids_information(auction, db, logger):
+
+    test_bids = [
+        {'amount': -1.0,
+         'bidder_id': u'5675acc9232942e8940a034994ad883e',
+         'bidder_name': '2',
+         'time': '2014-11-19T08:22:24.038426+00:00'},
+        {'amount': 475000.0,
+         'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+         'bidder_name': '1',
+         'time': '2014-11-19T08:22:21.726234+00:00'}
+    ]
+
+    auction.prepare_auction_document()
+    auction.get_auction_info()
+    auction.prepare_auction_stages_fast_forward()
+    auction.prepare_audit()
+
+    auction.current_stage = 5
+    res = auction.approve_bids_information()
+    assert res is False
+    assert auction.auction_document["stages"][5].get('changed') is None
+
+    # auction.add_bid(5, test_bids[0])
+    auction.add_bid(5, test_bids[1])
+
+    res = auction.approve_bids_information()
+    assert res is True
+    auction.auction_document["stages"][5].get('changed', '') is True
+    log_strings = log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert "Current stage bids [{'bidder_name': '1', 'amount': 475000.0, 'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137', 'time': '2014-11-19T08:22:21.726234+00:00'}]" in log_strings
+
+    """
+    ['Bidders count: 2',
+     'Saved auction document UA-11111 with rev 1-a0fe042bd1320af7d456150ddc981581',
+     'Bidders count: 2',
+     "Current stage bids [{'bidder_name': '1', 'amount': 475000.0, 'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137', 'time': '2014-11-19T08:22:21.726234+00:00'}]",
+     '']
+    """
+
+    auction.current_stage = 7
+    auction.add_bid(7, test_bids[0])
+
+    res = auction.approve_bids_information()
+    assert res is False
+    assert auction.auction_document["stages"][7].get('changed') is None
+    log_strings = log_strings = logger.log_capture_string.getvalue().split('\n')
+
+    assert "Current stage bids [{'bidder_name': '2', 'amount': -1.0, 'bidder_id': u'5675acc9232942e8940a034994ad883e', 'time': '2014-11-19T08:22:24.038426+00:00'}]" in log_strings
+    assert "Latest bid is bid cancellation: {'bidder_name': '2', 'amount': -1.0, 'bidder_id': u'5675acc9232942e8940a034994ad883e', 'time': '2014-11-19T08:22:24.038426+00:00'}" in log_strings
+
+    """
+    ['Bidders count: 2',
+     'Saved auction document UA-11111 with rev 1-5aba6a510830a744b9fc5a0fdeffd337',
+     'Bidders count: 2',
+     "Current stage bids [{'bidder_name': '1', 'amount': 475000.0, 'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137', 'time': '2014-11-19T08:22:21.726234+00:00'}]",
+     "Current stage bids [{'bidder_name': '2', 'amount': -1.0, 'bidder_id': u'5675acc9232942e8940a034994ad883e', 'time': '2014-11-19T08:22:24.038426+00:00'}]",
+     "Latest bid is bid cancellation: {'bidder_name': '2', 'amount': -1.0, 'bidder_id': u'5675acc9232942e8940a034994ad883e', 'time': '2014-11-19T08:22:24.038426+00:00'}",
+     '']
+    """
 
 
-# PostAuctionServiceMixin: TODO
+# PostAuctionServiceMixin
 
 def test_post_announce(auction, db, logger, mocker):
     test_bids = deepcopy(tender_data['data']['bids'])
