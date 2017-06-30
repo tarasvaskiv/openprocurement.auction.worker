@@ -13,8 +13,6 @@ from openprocurement.auction.worker.tests.base import (
 )
 
 # DBServiceTest
-
-
 def test_get_auction_info_simple(auction, logger):
     assert auction.rounds_stages == []
     assert auction.mapping == {}
@@ -121,7 +119,6 @@ def test_prepare_auction_document_multilot(multilot_auction, db, mocker):
             == set(auction_document.keys()) == set(multilot_auction.auction_document.keys())
 
 
-
 def test_prepare_public_document(auction, db):
     auction.prepare_auction_document()
     res = auction.prepare_public_document()
@@ -131,8 +128,17 @@ def test_prepare_public_document(auction, db):
 def test_get_auction_document(auction, db, mocker, logger):
     auction.prepare_auction_document()
     pub_doc = auction.db.get(auction.auction_doc_id)
+    del auction.auction_document
     res = auction.get_auction_document()
     assert res == pub_doc
+
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert 'Rev error' not in log_strings
+    auction.auction_document['_rev'] = 'wrong_rev'
+    res = auction.get_auction_document()
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert res == pub_doc
+    assert 'Rev error' in log_strings
 
     mock_db_get = mocker.patch.object(Database, 'get', autospec=True)
     mock_db_get.side_effect = [
@@ -142,9 +148,9 @@ def test_get_auction_document(auction, db, mocker, logger):
     ]
     auction.get_auction_document()
     log_strings = logger.log_capture_string.getvalue().split('\n')
-    assert log_strings[3] == 'Error while get document: status code is >= 400'
-    assert log_strings[4] == 'Unhandled error: unhandled error message'
-    assert log_strings[5] == 'Get auction document {0} with rev {1}'.format(res['_id'], res['_rev'])
+    assert log_strings[5] == 'Error while get document: status code is >= 400'
+    assert log_strings[6] == 'Unhandled error: unhandled error message'
+    assert log_strings[7] == 'Get auction document {0} with rev {1}'.format(res['_id'], res['_rev'])
 
 
 def test_save_auction_document(auction, db, mocker, logger):
