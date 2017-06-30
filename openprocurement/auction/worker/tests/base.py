@@ -6,7 +6,9 @@ import pytest
 import yaml
 import couchdb
 
+from copy import deepcopy
 from StringIO import StringIO
+from uuid import uuid4
 
 from openprocurement.auction.worker.auction import Auction, SCHEDULER
 from openprocurement.auction.worker.services import LOGGER
@@ -42,6 +44,39 @@ test_organization = {
 }
 
 
+item_id = uuid4().hex
+lot_id = '2222222222222222'
+lot_tender_data = deepcopy(tender_data)
+
+test_lot = {
+        'title': 'lot title',
+        'description': 'lot description',
+        'value': lot_tender_data['data']['value'],
+        'minimalStep': lot_tender_data['data']['minimalStep'],
+}
+
+lot_tender_data['data']['lots'] = [test_lot]
+lot_tender_data['data']['items'][0]['id'] = item_id
+lot_tender_data['data']['items'][0]['relatedLot'] = lot_id
+lot_tender_data['data']['lots'][0]['id'] = lot_id
+lot_tender_data['data']['lots'][0]['relatedItem'] = item_id
+
+lot_tender_data['data']['bids'][0]['lotValues'] = [{
+    "value": lot_tender_data['data']['bids'][0]['value'],
+    "relatedLot": lot_id,
+    "date": lot_tender_data['data']['bids'][0]['date']
+}]
+lot_tender_data['data']['bids'][1]['lotValues'] = [{
+    "value": lot_tender_data['data']['bids'][1]['value'],
+    "relatedLot": lot_id,
+    "date": lot_tender_data['data']['bids'][1]['date']
+}]
+del lot_tender_data['data']['bids'][0]['value']
+del lot_tender_data['data']['bids'][1]['value']
+del lot_tender_data['data']['bids'][0]['date']
+del lot_tender_data['data']['bids'][1]['date']
+
+
 @pytest.yield_fixture(scope="function")
 def auction():
     update_auctionPeriod(tender_file_path)
@@ -51,6 +86,18 @@ def auction():
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
         auction_data=tender_data,
         lot_id=False
+    )
+
+
+@pytest.yield_fixture(scope="function")
+def multilot_auction():
+    update_auctionPeriod(tender_file_path)
+    lot_tender_data['data']['lots'][0]['auctionPeriod'] = lot_tender_data['data']['auctionPeriod']
+    yield Auction(
+        tender_id=lot_tender_data['data']['tenderID'],
+        worker_defaults=yaml.load(open(worker_defaults_file_path)),
+        auction_data=lot_tender_data,
+        lot_id=lot_id
     )
 
 

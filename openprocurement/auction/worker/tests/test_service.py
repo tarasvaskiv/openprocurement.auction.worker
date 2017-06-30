@@ -8,7 +8,8 @@ from requests import Session
 from openprocurement.auction.worker.auction import Auction
 from openprocurement.auction.worker.services import BiddersServiceMixin
 from openprocurement.auction.worker.tests.base import (
-    auction, db, logger, scheduler, tender_data, test_organization
+    auction, db, logger, multilot_auction, scheduler,
+    tender_data, test_organization, lot_tender_data
 )
 
 # DBServiceTest
@@ -51,6 +52,43 @@ def test_get_auction_info_simple(auction, logger):
     assert log_strings[0] == 'Bidders count: 2'
 
 
+def test_get_auction_info_multilot(multilot_auction, logger):
+    assert multilot_auction.rounds_stages == []
+    assert multilot_auction.mapping == {}
+    assert multilot_auction.bidders_data == []
+    multilot_auction.get_auction_info(prepare=False)
+    assert multilot_auction.rounds_stages == [1, 4, 7]
+    assert multilot_auction.bidders_count == 2
+    assert multilot_auction.mapping == {
+        u'5675acc9232942e8940a034994ad883e': '2',
+        u'd3ba84c66c9e4f34bfb33cc3c686f137': '1'
+    }
+
+    # auction.bidders_data == [
+    #     {'date': u'2014-11-19T08:22:21.726234+00:00',
+    #      'id': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+    #      'value': {u'amount': 475000.0,
+    #                u'currency': None,
+    #                u'valueAddedTaxIncluded': True}},
+    #     {'date': u'2014-11-19T08:22:24.038426+00:00',
+    #      'id': u'5675acc9232942e8940a034994ad883e',
+    #      'value': {u'amount': 480000.0,
+    #                u'currency': None,
+    #                u'valueAddedTaxIncluded': True}}
+    # ]
+
+    assert set(['date', 'id', 'value']) == set(multilot_auction.bidders_data[0].keys())
+    assert len(multilot_auction.bidders_data) == 2
+
+    assert multilot_auction.bidders_data[0]['value']['amount'] == 475000.0
+    assert multilot_auction.bidders_data[0]['id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
+    assert multilot_auction.bidders_data[1]['value']['amount'] == 480000.0
+    assert multilot_auction.bidders_data[1]['id'] == '5675acc9232942e8940a034994ad883e'
+
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[0] == 'Bidders count: 2'
+
+
 def test_prepare_auction_document(auction, db, mocker):
     assert auction.db.get(auction.auction_doc_id) is None
     auction.prepare_auction_document()
@@ -65,6 +103,23 @@ def test_prepare_auction_document(auction, db, mocker):
             'value', 'test_auction_data', 'auction_type', '_rev',
             'mode', 'TENDERS_API_VERSION', '_id', 'procuringEntity']) \
             == set(auction_document.keys()) == set(auction.auction_document.keys())
+
+
+def test_prepare_auction_document_multilot(multilot_auction, db, mocker):
+    assert multilot_auction.db.get(multilot_auction.auction_doc_id) is None
+    multilot_auction.prepare_auction_document()
+    auction_document = multilot_auction.db.get(multilot_auction.auction_doc_id)
+    assert auction_document is not None
+    assert auction_document['_id'] == 'UA-11111_2222222222222222'
+    assert auction_document['_rev'] == multilot_auction.auction_document['_rev']
+    assert '_rev' in auction_document
+    assert set(['tenderID', 'initial_bids', 'current_stage',
+            'description', 'title', 'minimalStep', 'items',
+            'stages', 'procurementMethodType', 'results',
+            'value', 'test_auction_data', 'auction_type', '_rev',
+            'mode', 'TENDERS_API_VERSION', '_id', 'procuringEntity', 'lot']) \
+            == set(auction_document.keys()) == set(multilot_auction.auction_document.keys())
+
 
 
 def test_prepare_public_document(auction, db):
@@ -308,6 +363,10 @@ def test_prepare_audit(auction, db):
     assert 'auction_start' in auction.audit['timeline']
     for i in range(1, len(auction.audit['timeline'])):
         assert 'round_{0}'.format(i) in auction.audit['timeline'].keys()
+    auction.lot_id = '2222222222222222'
+    auction.prepare_audit()
+
+    assert auction.audit['lot_id'] == '2222222222222222'
 
 
 def test_approve_audit_info_on_bid_stage(auction, db):
@@ -483,6 +542,21 @@ def test_set_auction_and_participation_urls(auction, mocker, logger):
     assert 'auctionUrl' in log_strings[1]
 
 
+def test_set_auction_and_participation_urls_multilot(multilot_auction, mocker, logger):
+    mock_session_request = mocker.patch.object(multilot_auction.session, 'request', autospec=True)
+    mock_session_request.return_value.json.return_value = {
+        'data': {
+            'id': 'UA-11111'
+        }
+    }
+    mock_session_request.return_value.ok.return_value = True
+    multilot_auction.set_auction_and_participation_urls()
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[0] == "Set auction and participation urls for tender {}".format(multilot_auction.tender_id)
+    assert 'participationUrl' in log_strings[1]
+    assert 'auctionUrl' in log_strings[1]
+
+
 def test_approve_bids_information(auction, db, logger):
 
     test_bids = [
@@ -551,7 +625,7 @@ def test_post_announce(auction, db, logger, mocker):
     test_bids = deepcopy(tender_data['data']['bids'])
 
     for bid in test_bids:
-        bid['tenderers'] = test_organization
+        bid['tenderers'] = [test_organization]
     mock_session_request = mocker.patch.object(Session, 'request', autospec=True)
     mock_session_request.return_value.json.return_value = {
         'data': {
@@ -573,6 +647,33 @@ def test_post_announce(auction, db, logger, mocker):
 
     assert 'Get auction document UA-11111 with rev 1-' in log_strings[2]
     assert 'Saved auction document UA-11111 with rev 2-' in log_strings[3]
+
+
+def test_post_announce_multilot(multilot_auction, db, logger, mocker):
+    test_bids = deepcopy(lot_tender_data['data']['bids'])
+
+    for bid in test_bids:
+        bid['tenderers'] = [test_organization]
+    mock_session_request = mocker.patch.object(Session, 'request', autospec=True)
+    mock_session_request.return_value.json.return_value = {
+        'data': {
+            'bids': test_bids
+        }
+    }
+    multilot_auction.prepare_auction_document()
+    multilot_auction.post_announce()
+
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+
+    """
+     ['Saved auction document UA-11111_2222222222222222 with rev 1-2802d34ff0ca367e06dd87492071620b',
+     'Get auction document UA-11111_2222222222222222 with rev 1-2802d34ff0ca367e06dd87492071620b',
+     'Saved auction document UA-11111_2222222222222222 with rev 2-665cb61789c7925140421559cdbe20c0',
+     '']
+
+    """
+    assert 'Get auction document UA-11111_2222222222222222 with rev 1-' in log_strings[1]
+    assert 'Saved auction document UA-11111_2222222222222222 with rev 2-' in log_strings[2]
 
 
 def test_put_auction_data(auction, db, mocker, logger):
@@ -604,6 +705,40 @@ def test_put_auction_data(auction, db, mocker, logger):
     ]
 
     response = auction.put_auction_data()
+    assert response is None
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert "Auctions results not approved" in log_strings
+
+
+def test_put_auction_data_multilot(multilot_auction, db, mocker, logger):
+
+    test_bids = deepcopy(lot_tender_data['data']['bids'])
+
+    for bid in test_bids:
+        bid['tenderers'] = [test_organization]
+
+    mock_session_request = mocker.patch.object(Session, 'request', autospec=True)
+    mock_session_request.return_value.json.side_effect = [
+        {'data': {'id': 'UA-11111'}},
+        {'data': {'bids': test_bids}},
+    ]
+
+    multilot_auction.prepare_auction_document()
+    multilot_auction.get_auction_info()
+    multilot_auction.prepare_auction_stages_fast_forward()
+    multilot_auction.prepare_audit()
+
+    response = multilot_auction.put_auction_data()
+    assert response is None
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert "Auctions results not approved" not in log_strings
+
+    mock_session_request.return_value.json.side_effect = [
+        {'data': {'id': 'UA-11111'}},
+        False,
+    ]
+
+    response = multilot_auction.put_auction_data()
     assert response is None
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert "Auctions results not approved" in log_strings
