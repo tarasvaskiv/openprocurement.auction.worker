@@ -77,6 +77,47 @@ del lot_tender_data['data']['bids'][0]['date']
 del lot_tender_data['data']['bids'][1]['date']
 
 
+features_tender_data = deepcopy(tender_data)
+test_features_item = features_tender_data['data']['items'][0].copy()
+test_features_item['id'] = "1"
+features_tender_data['data']['items'] = [test_features_item]
+features_tender_data['data']["features"] = [
+    {
+        "code": "OCDS-123454-YEARS",
+        "featureOf": "tenderer",
+        "title": u"Років на ринку",
+        "title_en": "Years trading",
+        "description": u"Кількість років, які організація учасник працює на ринку",
+        "enum": [
+            {
+                "value": 0.05,
+                "title": u"До 3 років"
+            },
+            {
+                "value": 0.1,
+                "title": u"Більше 3 років, менше 5 років"
+            },
+            {
+                "value": 0.15,
+                "title": u"Більше 5 років"
+            }
+        ]
+    }
+]
+features_tender_data['data']['bids'][0]['parameters'] = [
+    {
+        "code": "OCDS-123454-YEARS",
+        "value": 0.1,
+    }
+]
+features_tender_data['data']['bids'][1]['parameters'] = [
+    {
+        "code": "OCDS-123454-YEARS",
+        "value": 0.15,
+    }
+]
+
+
 @pytest.yield_fixture(scope="function")
 def auction():
     update_auctionPeriod(tender_file_path)
@@ -98,6 +139,18 @@ def multilot_auction():
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
         auction_data=lot_tender_data,
         lot_id=lot_id
+    )
+
+
+@pytest.yield_fixture(scope="function")
+def features_auction():
+    # update_auctionPeriod(tender_file_path)
+
+    yield Auction(
+        tender_id=features_tender_data['data']['tenderID'],
+        worker_defaults=yaml.load(open(worker_defaults_file_path)),
+        auction_data=features_tender_data,
+        lot_id=False
     )
 
 

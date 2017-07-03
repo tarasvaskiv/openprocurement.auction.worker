@@ -8,9 +8,10 @@ from requests import Session
 from openprocurement.auction.worker.auction import Auction
 from openprocurement.auction.worker.services import BiddersServiceMixin
 from openprocurement.auction.worker.tests.base import (
-    auction, db, logger, multilot_auction, scheduler,
-    tender_data, test_organization, lot_tender_data
+    auction, db, logger, multilot_auction, features_auction, scheduler,
+    tender_data, test_organization, lot_tender_data, features_tender_data
 )
+from openprocurement.auction.utils import filter_amount
 
 
 # DBServiceTest
@@ -227,8 +228,29 @@ def test_prepare_auction_document_smd_fast_forward_no_debug(auction, db, mocker)
 
 def test_prepare_public_document(auction, db):
     auction.prepare_auction_document()
+    auction.get_auction_info()
+    auction.prepare_auction_stages()
     res = auction.prepare_public_document()
-    assert res is not None
+    assert set(['value', 'initial_bids', 'tenderID', 'description', 'title', 'minimalStep',
+                'items', '_rev', 'stages', 'procurementMethodType', 'results', 'auction_type',
+                'mode', 'test_auction_data', 'current_stage', 'TENDERS_API_VERSION', 'endDate',
+                '_id', 'procuringEntity']) == set(res.keys())
+
+    auction_document = auction.db.get(auction.auction_doc_id)
+    assert auction_document['_id'] == 'UA-11111'
+    assert auction_document['_rev'] == res['_rev']
+
+
+def test_prepare_public_document_features(features_auction, db, mocker):
+    features_auction.prepare_auction_document()
+    features_auction.auction_document['current_stage'] = 4
+    mocked_map = mocker.patch("__builtin__.map", autospec=True)
+    res = features_auction.prepare_public_document()
+    assert mocked_map.called is True
+    assert mocked_map.call_count == 3
+    assert filter_amount, 'initial_bids' in mocked_map.call_args_list[1][0]
+    assert filter_amount, 'stages' in mocked_map.call_args_list[2][0]
+    assert filter_amount, 'results' in mocked_map.call_args_list[3][0]
 
 
 def test_get_auction_document(auction, db, mocker, logger):
@@ -354,6 +376,21 @@ def test_prepare_auction_stages_fast_forward(auction, db):
 
     assert results[1]['amount'] == 475000.0
     assert results[1]['bidder_id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
+
+
+def test_prepare_auction_stages_fast_forward_features(features_auction, db, mocker):
+    test_bids = features_tender_data['data']['bids']
+
+    features_auction.prepare_auction_document()
+    features_auction.get_auction_info()
+
+    mocked_cooking = mocker.patch('barbecue.cooking', autospec=True)
+
+    features_auction.prepare_auction_stages_fast_forward()
+    assert mocked_cooking.called is True
+    assert mocked_cooking.call_count == 2
+    assert test_bids[0]["value"]["amount"] in mocked_cooking.call_args_list[0][0]
+    assert test_bids[1]["value"]["amount"] in mocked_cooking.call_args_list[1][0]
 
 
 def test_end_bids_stage(auction, db, mocker, logger):
@@ -516,6 +553,39 @@ def test_approve_audit_info_on_bid_stage(auction, db):
     assert auction.audit['timeline']['round_3']['turn_1']['bidder'] == '5675acc9232942e8940a034994ad883e'
 
 
+def test_approve_audit_info_on_bid_stage_features(features_auction, db):
+    features_auction.prepare_auction_document()
+    features_auction.get_auction_info()
+    features_auction.prepare_auction_stages_fast_forward()
+
+    features_auction.current_stage = 7
+    features_auction.current_round = features_auction.get_round_number(
+        features_auction.auction_document["current_stage"]
+    )
+    features_auction.prepare_audit()
+    features_auction.auction_document["stages"][features_auction.current_stage]['changed'] = True
+
+    for i in range(1, len(features_auction.audit['timeline'])):
+        assert features_auction.audit['timeline']['round_{0}'.format(i)] == {}
+
+    features_auction.approve_audit_info_on_bid_stage()
+
+    # {'auction_start': {'initial_bids': []},
+    #  'round_1': {},
+    #  'round_2': {},
+    #  'round_3': {'turn_1': {'amount': 475000.0,
+    #                         'amount_features': '1454662679640670217500/3422735716801577',
+    #                         'bid_time': '2014-11-19T08:22:21.726234+00:00',
+    #                         'bidder': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+    #                         'coeficient': '34227357168015770/30624477466119373',
+    #                         'time': '2017-07-03T14:48:28.384844+03:00'}}}
+
+    assert features_auction.audit['timeline']['round_3']['turn_1']['amount_features'] \
+        == '1454662679640670217500/3422735716801577'
+    assert features_auction.audit['timeline']['round_3']['turn_1']['coeficient'] \
+        == '34227357168015770/30624477466119373'
+
+
 def test_approve_audit_info_on_announcement(auction, db):
     auction.prepare_auction_document()
     auction.get_auction_info()
@@ -632,10 +702,84 @@ def test_filter_bids_keys(auction, db):
     auction.get_auction_info()
     auction.prepare_auction_stages_fast_forward()
     bids = auction.auction_document['results']
+
+    # [{'amount': 480000.0,
+    #   'bidder_id': u'5675acc9232942e8940a034994ad883e',
+    #   'label': {'en': 'Bidder #2',
+    #             'ru': '\xd0\xa3\xd1\x87\xd0\xb0\xd1\x81\xd1\x82\xd0\xbd\xd0\xb8\xd0\xba \xe2\x84\x962',
+    #             'uk': '\xd0\xa3\xd1\x87\xd0\xb0\xd1\x81\xd0\xbd\xd0\xb8\xd0\xba \xe2\x84\x962'},
+    #   'test': 'test',
+    #   'time': '2014-11-19T08:22:24.038426+00:00'},
+    #  {'amount': 475000.0,
+    #   'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+    #   'label': {'en': 'Bidder #1',
+    #             'ru': '\xd0\xa3\xd1\x87\xd0\xb0\xd1\x81\xd1\x82\xd0\xbd\xd0\xb8\xd0\xba \xe2\x84\x961',
+    #             'uk': '\xd0\xa3\xd1\x87\xd0\xb0\xd1\x81\xd0\xbd\xd0\xb8\xd0\xba \xe2\x84\x961'},
+    #   'time': '2014-11-19T08:22:21.726234+00:00'}]
+
     result = auction.filter_bids_keys(bids)
     assert result is not None
     bids[0]['test'] = 'test'
     result = auction.filter_bids_keys(bids)
+
+    # [{'amount': 480000.0,
+    #   'bidder_id': u'5675acc9232942e8940a034994ad883e',
+    #   'bidder_name': '2',
+    #   'time': '2014-11-19T08:22:24.038426+00:00'},
+    #  {'amount': 475000.0,
+    #   'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+    #   'bidder_name': '1',
+    #   'time': '2014-11-19T08:22:21.726234+00:00'}]
+
+    assert 'test' not in result[0]
+
+
+def test_filter_bids_keys_features(features_auction, db):
+    features_auction.prepare_auction_document()
+    features_auction.get_auction_info()
+    features_auction.prepare_auction_stages_fast_forward()
+    bids = features_auction.auction_document['results']
+    for bid in bids:
+        assert 'coeficient', 'amount_features' in bid.keys()
+
+    # [{'amount': 475000.0,
+    #   'amount_features': '1454662679640670217500/3422735716801577',
+    #   'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+    #   'coeficient': '34227357168015770/30624477466119373',
+    #   'label': {'en': 'Bidder #1',
+    #             'ru': '\xd0\xa3\xd1\x87\xd0\xb0\xd1\x81\xd1\x82\xd0\xbd\xd0\xb8\xd0\xba \xe2\x84\x961',
+    #             'uk': '\xd0\xa3\xd1\x87\xd0\xb0\xd1\x81\xd0\xbd\xd0\xb8\xd0\xba \xe2\x84\x961'},
+    #   'test': 'test',
+    #   'time': '2014-11-19T08:22:21.726234+00:00'},
+    #  {'amount': 480000.0,
+    #   'amount_features': '57420895248973824375/140737488355328',
+    #   'bidder_id': u'5675acc9232942e8940a034994ad883e',
+    #   'coeficient': '36028797018963968/30624477466119373',
+    #   'label': {'en': 'Bidder #2',
+    #             'ru': '\xd0\xa3\xd1\x87\xd0\xb0\xd1\x81\xd1\x82\xd0\xbd\xd0\xb8\xd0\xba \xe2\x84\x962',
+    #             'uk': '\xd0\xa3\xd1\x87\xd0\xb0\xd1\x81\xd0\xbd\xd0\xb8\xd0\xba \xe2\x84\x962'},
+    #   'time': '2014-11-19T08:22:24.038426+00:00'}]
+
+    result = features_auction.filter_bids_keys(bids)
+    assert result is not None
+    bids[0]['test'] = 'test'
+    result = features_auction.filter_bids_keys(bids)
+    for item in result:
+        assert 'coeficient', 'amount_features' in item.keys()
+
+    # [{'amount': 475000.0,
+    #   'amount_features': '1454662679640670217500/3422735716801577',
+    #   'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+    #   'bidder_name': '1',
+    #   'coeficient': '34227357168015770/30624477466119373',
+    #   'time': '2014-11-19T08:22:21.726234+00:00'},
+    #  {'amount': 480000.0,
+    #   'amount_features': '57420895248973824375/140737488355328',
+    #   'bidder_id': u'5675acc9232942e8940a034994ad883e',
+    #   'bidder_name': '2',
+    #   'coeficient': '36028797018963968/30624477466119373',
+    #   'time': '2014-11-19T08:22:24.038426+00:00'}]
+
     assert 'test' not in result[0]
 
 
@@ -697,7 +841,7 @@ def test_approve_bids_information(auction, db, logger):
 
     res = auction.approve_bids_information()
     assert res is True
-    auction.auction_document["stages"][5].get('changed', '') is True
+    assert auction.auction_document["stages"][5].get('changed', '') is True
     log_strings = log_strings = logger.log_capture_string.getvalue().split('\n')
     assert "Current stage bids [{'bidder_name': '1', 'amount': 475000.0, 'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137', 'time': '2014-11-19T08:22:21.726234+00:00'}]" in log_strings
 
