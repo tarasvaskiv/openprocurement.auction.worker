@@ -1,7 +1,6 @@
 import logging
 
 from copy import deepcopy
-from zope.interface import implementer
 from urlparse import urljoin
 from datetime import datetime
 from couchdb import Database, Session
@@ -14,6 +13,8 @@ from yaml import safe_dump as yaml_dump
 from requests import Session as RequestsSession
 from dateutil.tz import tzlocal
 from barbecue import cooking
+from apscheduler.schedulers.gevent import GeventScheduler
+
 from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE,
     AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND,
@@ -25,11 +26,8 @@ from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_SERVICE_PREPARE_SERVER,
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
 )
-from pytz import timezone
 from openprocurement.auction.server import run_server
 from openprocurement.auction.executor import AuctionsExecutor
-from apscheduler.schedulers.gevent import GeventScheduler
-#from openprocurement.auction.interfaces import IAuctionWorker
 from openprocurement.auction.worker.services import\
     DBServiceMixin, RequestIDServiceMixin, AuditServiceMixin,\
     DateTimeServiceMixin, BiddersServiceMixin, PostAuctionServiceMixin,\
@@ -49,7 +47,6 @@ SCHEDULER = GeventScheduler(job_defaults={"misfire_grace_time": 100},
 SCHEDULER.timezone = TIMEZONE
 
 
-#@implementer(IAuctionWorker)
 class Auction(DBServiceMixin,
               RequestIDServiceMixin,
               AuditServiceMixin,
