@@ -132,8 +132,8 @@ def auction():
 
 @pytest.yield_fixture(scope="function")
 def multilot_auction():
-    update_auctionPeriod(tender_file_path)
     lot_tender_data['data']['lots'][0]['auctionPeriod'] = lot_tender_data['data']['auctionPeriod']
+    
     yield Auction(
         tender_id=lot_tender_data['data']['tenderID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
@@ -144,7 +144,6 @@ def multilot_auction():
 
 @pytest.yield_fixture(scope="function")
 def features_auction():
-    # update_auctionPeriod(tender_file_path)
 
     yield Auction(
         tender_id=features_tender_data['data']['tenderID'],

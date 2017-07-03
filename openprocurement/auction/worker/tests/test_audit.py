@@ -1,7 +1,7 @@
 from requests import Session
 
 from openprocurement.auction.worker.tests.base import (
-    auction, db, logger
+    auction, features_auction, db, logger
 )
 
 
@@ -24,6 +24,10 @@ def test_prepare_audit(auction, db):
     assert 'auction_start' in auction.audit['timeline']
     for i in range(1, len(auction.audit['timeline'])):
         assert 'round_{0}'.format(i) in auction.audit['timeline'].keys()
+    auction.lot_id = '2222222222222222'
+    auction.prepare_audit()
+
+    assert auction.audit['lot_id'] == '2222222222222222'
 
 
 def test_approve_audit_info_on_bid_stage(auction, db):
@@ -61,6 +65,39 @@ def test_approve_audit_info_on_bid_stage(auction, db):
     assert auction.audit['timeline']['round_3']['turn_1']['bidder'] == '5675acc9232942e8940a034994ad883e'
 
 
+def test_approve_audit_info_on_bid_stage_features(features_auction, db):
+    features_auction.prepare_auction_document()
+    features_auction.get_auction_info()
+    features_auction.prepare_auction_stages_fast_forward()
+
+    features_auction.current_stage = 7
+    features_auction.current_round = features_auction.get_round_number(
+        features_auction.auction_document["current_stage"]
+    )
+    features_auction.prepare_audit()
+    features_auction.auction_document["stages"][features_auction.current_stage]['changed'] = True
+
+    for i in range(1, len(features_auction.audit['timeline'])):
+        assert features_auction.audit['timeline']['round_{0}'.format(i)] == {}
+
+    features_auction.approve_audit_info_on_bid_stage()
+
+    # {'auction_start': {'initial_bids': []},
+    #  'round_1': {},
+    #  'round_2': {},
+    #  'round_3': {'turn_1': {'amount': 475000.0,
+    #                         'amount_features': '1454662679640670217500/3422735716801577',
+    #                         'bid_time': '2014-11-19T08:22:21.726234+00:00',
+    #                         'bidder': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+    #                         'coeficient': '34227357168015770/30624477466119373',
+    #                         'time': '2017-07-03T14:48:28.384844+03:00'}}}
+
+    assert features_auction.audit['timeline']['round_3']['turn_1']['amount_features'] \
+        == '1454662679640670217500/3422735716801577'
+    assert features_auction.audit['timeline']['round_3']['turn_1']['coeficient'] \
+        == '34227357168015770/30624477466119373'
+
+
 def test_approve_audit_info_on_announcement(auction, db):
     auction.prepare_auction_document()
     auction.get_auction_info()
@@ -93,7 +130,7 @@ def test_approve_audit_info_on_announcement(auction, db):
     assert 'auction_start' in auction.audit['timeline']
     assert 'results' in auction.audit['timeline']
     for i in range(2, len(auction.audit['timeline'])):
-        assert 'round_{0}'.format(i - 1) in auction.audit['timeline'].keys()
+        assert 'round_{0}'.format(i-1) in auction.audit['timeline'].keys()
     results = auction.audit['timeline']['results']
     assert len(results['bids']) == 2
 

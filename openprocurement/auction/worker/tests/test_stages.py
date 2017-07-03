@@ -2,7 +2,7 @@ from openprocurement.auction.worker.auction import Auction
 from openprocurement.auction.worker.services import BiddersServiceMixin
 
 from openprocurement.auction.worker.tests.base import (
-    auction, db, logger
+    auction, features_auction, db, logger, features_tender_data
 )
 
 
@@ -75,6 +75,21 @@ def test_prepare_auction_stages_fast_forward(auction, db):
 
     assert results[1]['amount'] == 475000.0
     assert results[1]['bidder_id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
+
+
+def test_prepare_auction_stages_fast_forward_features(features_auction, db, mocker):
+    test_bids = features_tender_data['data']['bids']
+
+    features_auction.prepare_auction_document()
+    features_auction.get_auction_info()
+
+    mocked_cooking = mocker.patch('barbecue.cooking', autospec=True)
+
+    features_auction.prepare_auction_stages_fast_forward()
+    assert mocked_cooking.called is True
+    assert mocked_cooking.call_count == 2
+    assert test_bids[0]["value"]["amount"] in mocked_cooking.call_args_list[0][0]
+    assert test_bids[1]["value"]["amount"] in mocked_cooking.call_args_list[1][0]
 
 
 def test_end_bids_stage(auction, db, mocker, logger):
