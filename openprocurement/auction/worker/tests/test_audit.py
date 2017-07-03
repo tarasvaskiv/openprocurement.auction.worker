@@ -1,0 +1,138 @@
+from requests import Session
+
+from openprocurement.auction.worker.tests.base import (
+    auction, db, logger
+)
+
+
+def test_prepare_audit(auction, db):
+    auction.prepare_audit()
+
+    # auction.audit == {'id': u'UA-11111',
+    #                   'tenderId': u'UA-11111',
+    #                   'tender_id': u'UA-11111',
+    #                   'timeline': {'auction_start': {'initial_bids': []},
+    #                                'round_1': {},
+    #                                'round_2': {},
+    #                                'round_3': {}}}
+
+    assert set(['id', 'tenderId', 'tender_id', 'timeline']) == set(auction.audit.keys())
+    assert auction.audit['id'] == 'UA-11111'
+    assert auction.audit['tenderId'] == 'UA-11111'
+    assert auction.audit['tender_id'] == 'UA-11111'
+    assert len(auction.audit['timeline']) == 4
+    assert 'auction_start' in auction.audit['timeline']
+    for i in range(1, len(auction.audit['timeline'])):
+        assert 'round_{0}'.format(i) in auction.audit['timeline'].keys()
+
+
+def test_approve_audit_info_on_bid_stage(auction, db):
+    auction.prepare_auction_document()
+    auction.get_auction_info()
+    auction.prepare_auction_stages_fast_forward()
+
+    auction.current_stage = 7
+    auction.current_round = auction.get_round_number(
+        auction.auction_document["current_stage"]
+    )
+    auction.prepare_audit()
+    auction.auction_document["stages"][auction.current_stage]['changed'] = True
+
+    auction.approve_audit_info_on_bid_stage()
+
+    # auction.audit == {'id': u'UA-11111',
+    #                   'tenderId': u'UA-11111',
+    #                   'tender_id': u'UA-11111',
+    #                   'timeline': {'auction_start': {'initial_bids': []},
+    #                                'round_1': {},
+    #                                'round_2': {},
+    #                                'round_3': {'turn_1': {'bidder': u'5675acc9232942e8940a034994ad883e',
+    #                                                       'time': '2017-06-23T13:18:49.764132+03:00'}}}}
+
+    assert set(['id', 'tenderId', 'tender_id', 'timeline']) == set(auction.audit.keys())
+    assert auction.audit['id'] == 'UA-11111'
+    assert auction.audit['tenderId'] == 'UA-11111'
+    assert auction.audit['tender_id'] == 'UA-11111'
+    assert len(auction.audit['timeline']) == 4
+    assert 'auction_start' in auction.audit['timeline']
+    for i in range(1, len(auction.audit['timeline'])):
+        assert 'round_{0}'.format(i) in auction.audit['timeline'].keys()
+    assert 'turn_1' in auction.audit['timeline']['round_3']
+    assert auction.audit['timeline']['round_3']['turn_1']['bidder'] == '5675acc9232942e8940a034994ad883e'
+
+
+def test_approve_audit_info_on_announcement(auction, db):
+    auction.prepare_auction_document()
+    auction.get_auction_info()
+    auction.prepare_auction_stages_fast_forward()
+
+    auction.prepare_audit()
+
+    auction.approve_audit_info_on_announcement()
+
+    # {'id': u'UA-11111',
+    #  'tenderId': u'UA-11111',
+    #  'tender_id': u'UA-11111',
+    #  'timeline': {'auction_start': {'initial_bids': []},
+    #               'results': {'bids': [{'amount': 480000.0,
+    #                                     'bidder': u'5675acc9232942e8940a034994ad883e',
+    #                                     'time': '2014-11-19T08:22:24.038426+00:00'},
+    #                                    {'amount': 475000.0,
+    #                                     'bidder': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+    #                                     'time': '2014-11-19T08:22:21.726234+00:00'}],
+    #                           'time': '2017-06-23T13:28:24.676818+03:00'},
+    #               'round_1': {},
+    #               'round_2': {},
+    #               'round_3': {}}}
+
+    assert set(['id', 'tenderId', 'tender_id', 'timeline']) == set(auction.audit.keys())
+    assert auction.audit['id'] == 'UA-11111'
+    assert auction.audit['tenderId'] == 'UA-11111'
+    assert auction.audit['tender_id'] == 'UA-11111'
+    assert len(auction.audit['timeline']) == 5
+    assert 'auction_start' in auction.audit['timeline']
+    assert 'results' in auction.audit['timeline']
+    for i in range(2, len(auction.audit['timeline'])):
+        assert 'round_{0}'.format(i - 1) in auction.audit['timeline'].keys()
+    results = auction.audit['timeline']['results']
+    assert len(results['bids']) == 2
+
+    assert results['bids'][0]['amount'] == 480000.0
+    assert results['bids'][0]['bidder'] == '5675acc9232942e8940a034994ad883e'
+
+    assert results['bids'][1]['amount'] == 475000.0
+    assert results['bids'][1]['bidder'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
+
+
+def test_upload_audit_file_without_document_service(auction, db, logger, mocker):
+    from requests import Session as RequestsSession
+    auction.session_ds = RequestsSession()
+    auction.prepare_auction_document()
+    auction.get_auction_info()
+
+    res = auction.upload_audit_file_with_document_service()
+    assert res is None
+
+    mock_session_request = mocker.patch.object(Session, 'request', autospec=True)
+
+    mock_session_request.return_value.json.return_value = {
+        'data': {
+            'id': 'UA-11111'
+        }
+    }
+
+    res = auction.upload_audit_file_with_document_service('UA-11111')
+    assert res == 'UA-11111'
+
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[3] == 'Audit log not approved.'
+
+
+def test_upload_audit_file_with_document_service(auction, db, logger):
+    auction.prepare_auction_document()
+    auction.get_auction_info()
+
+    res = auction.upload_audit_file_without_document_service()
+    assert res is None
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[3] == 'Audit log not approved.'
