@@ -1,6 +1,7 @@
 from copy import deepcopy
 from requests import Session
 
+from openprocurement.auction.worker.services import AuditServiceMixin
 from openprocurement.auction.worker.tests.base import (
     auction, multilot_auction, db, logger, scheduler,
     tender_data, test_organization, lot_tender_data
@@ -94,6 +95,35 @@ def test_put_auction_data(auction, db, mocker, logger):
     assert response is None
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert "Auctions results not approved" in log_strings
+
+
+def test_put_auction_data_with_document_service(auction, db, mocker, logger):
+    auction.worker_defaults['with_document_service'] = True
+    test_bids = deepcopy(tender_data['data']['bids'])
+
+    for bid in test_bids:
+        bid['tenderers'] = [test_organization]
+
+    mock_session_request = mocker.patch.object(Session, 'request', autospec=True)
+    mock_session_request.return_value.json.side_effect = [
+        {'data': {'bids': test_bids}},
+    ]
+
+
+    auction.prepare_auction_document()
+    auction.get_auction_info()
+    auction.prepare_auction_stages_fast_forward()
+    auction.prepare_audit()
+
+    mock_upload_audit_file_with_document_service = mocker.patch.object(AuditServiceMixin, 'upload_audit_file_with_document_service', autospec=True)
+    mock_upload_audit_file_with_document_service.return_value = 'UA-11111'
+
+    response = auction.put_auction_data()
+
+    assert mock_upload_audit_file_with_document_service.called is True
+    assert mock_upload_audit_file_with_document_service.call_count == 2
+    assert mock_upload_audit_file_with_document_service.call_args_list[0][0] == (auction, )
+    assert mock_upload_audit_file_with_document_service.call_args_list[1][0] == (auction, 'UA-11111')
 
 
 def test_put_auction_data_multilot(multilot_auction, db, mocker, logger):

@@ -193,3 +193,41 @@ def test_approve_bids_information(auction, db, logger):
      "Latest bid is bid cancellation: {'bidder_name': '2', 'amount': -1.0, 'bidder_id': u'5675acc9232942e8940a034994ad883e', 'time': '2014-11-19T08:22:24.038426+00:00'}",
      '']
     """
+
+
+def test_approve_bids_information_features(features_auction, db, logger):
+
+    test_bids = [
+        {'amount': 480000.0,
+         'amount_features': 0.1,
+         'bidder_id': u'5675acc9232942e8940a034994ad883e',
+         'bidder_name': '2',
+         'time': '2014-11-19T08:22:24.038426+00:00'},
+        {'amount': 475000.0,
+         'amount_features': 0.15,
+         'bidder_id': u'd3ba84c66c9e4f34bfb33cc3c686f137',
+         'bidder_name': '1',
+         'time': '2014-11-19T08:22:21.726234+00:00'}
+    ]
+
+    features_auction.prepare_auction_document()
+    features_auction.get_auction_info()
+    features_auction.prepare_auction_stages_fast_forward()
+    features_auction.prepare_audit()
+
+    features_auction.current_stage = 5
+    res = features_auction.approve_bids_information()
+    assert res is False
+    assert features_auction.auction_document["stages"][5].get('changed') is None
+
+    features_auction.add_bid(5, test_bids[1])
+    features_auction.add_bid(5, test_bids[0])
+
+    res = features_auction.approve_bids_information()
+    assert res is True
+    current_stage = features_auction.auction_document["stages"][features_auction.current_stage]
+    assert current_stage['amount'] == 480000.0
+    assert current_stage['amount_features'] == '57420895248973824375/140737488355328'
+    assert current_stage['coeficient'] == '36028797018963968/30624477466119373'
+    assert current_stage['bidder_id'] == '5675acc9232942e8940a034994ad883e'
+    assert current_stage['label']['en'] == 'Bidder #2'
