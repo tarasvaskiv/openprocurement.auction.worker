@@ -1,6 +1,7 @@
-from openprocurement.auction.worker.tests.base import (
-    auction
-)
+import datetime
+import pytest
+
+from openprocurement.auction.worker.tests.base import auction
 
 
 def test_generate_request_id(auction):
@@ -11,6 +12,12 @@ def test_generate_request_id(auction):
     assert "auction-req-" in auction.request_id
 
 
-def test_convert_date(auction):
-    converted = auction.convert_datetime('2014-01-01')
-    assert converted is not None
+@pytest.mark.parametrize("test_input,expected", [
+    ('2014-01-01', (2014, 1, 1)),
+    ('1999-10-31', (1999, 10, 31)),
+    pytest.mark.xfail(('2017-25-128', (2017, 25, 128))),
+])
+def test_convert_date(auction, test_input, expected):
+    converted = auction.convert_datetime(test_input)
+    assert isinstance(converted, datetime.datetime)
+    assert (converted.year, converted.month, converted.day) == expected

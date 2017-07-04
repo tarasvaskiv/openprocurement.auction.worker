@@ -1,3 +1,5 @@
+import pytest
+
 from openprocurement.auction.worker.auction import Auction
 from openprocurement.auction.worker.services import BiddersServiceMixin
 
@@ -6,40 +8,37 @@ from openprocurement.auction.worker.tests.base import (
 )
 
 
-def test_get_round_number(auction, db):
+@pytest.mark.parametrize("test_input,expected", [(-1, 0), (2, 1), (6, 2), (10, 3)])
+def test_get_round_number(auction, db, test_input, expected):
     auction.prepare_auction_document()
-    res = auction.get_round_number(auction.auction_document["current_stage"])
-    assert res == 0
-    res = auction.get_round_number(2)
-    assert res == 1
-    res = auction.get_round_number(6)
-    assert res == 2
-    res = auction.get_round_number(10)
-    assert res == 3
+
+    res = auction.get_round_number(test_input)
+    assert res == expected
 
 
-def test_get_round_stages(auction):
+@pytest.mark.parametrize("test_input,expected", [
+    (0, (0, 0)),
+    (1, (1, 1)),
+    (2, (2, 2)),
+    (3, (3, 3)),
+])
+def test_get_round_stages_0_bids(auction, test_input, expected):
     # auction.bidders_count == 0
-    res = auction.get_round_stages(0)
-    assert res == (0, 0)
-    res = auction.get_round_stages(1)
-    assert res == (1, 1)
-    res = auction.get_round_stages(2)
-    assert res == (2, 2)
-    res = auction.get_round_stages(3)
-    assert res == (3, 3)
+    res = auction.get_round_stages(test_input)
+    assert res == expected
 
+
+@pytest.mark.parametrize("test_input,expected", [
+    (0, (-2, 0)),
+    (1, (1, 3)),
+    (2, (4, 6)),
+    (3, (7, 9)),
+])
+def test_get_round_stages_2_bids(auction, test_input, expected):
     auction.get_auction_info()
     # auction.bidders_count == 2
-
-    res = auction.get_round_stages(0)
-    assert res == (-2, 0)
-    res = auction.get_round_stages(1)
-    assert res == (1, 3)
-    res = auction.get_round_stages(2)
-    assert res == (4, 6)
-    res = auction.get_round_stages(3)
-    assert res == (7, 9)
+    res = auction.get_round_stages(test_input)
+    assert res == expected
 
 
 def test_prepare_auction_stages_fast_forward(auction, db):
