@@ -1,7 +1,7 @@
 import pytest
 
 from openprocurement.auction.worker.auction import Auction
-from openprocurement.auction.worker.services import BiddersServiceMixin
+from openprocurement.auction.worker.mixins import BiddersServiceMixin
 
 from openprocurement.auction.worker.tests.base import (
     auction, features_auction, db, logger, features_tender_data
