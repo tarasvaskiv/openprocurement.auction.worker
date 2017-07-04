@@ -21,7 +21,7 @@ from barbecue import calculate_coeficient
 MULTILINGUAL_FIELDS = ["title", "description"]
 ADDITIONAL_LANGUAGES = ["ru", "en"]
 ROUNDS = 3
-logger = logging.getLogger('Auction Worker')
+LOGGER = logging.getLogger('Auction Worker')
 
 
 def get_auction_info(self, prepare=False):
@@ -49,12 +49,12 @@ def get_auction_info(self, prepare=False):
             if self.auction_document:
                 self.auction_document["current_stage"] = -100
                 self.save_auction_document()
-                logger.warning("Cancel auction: {}".format(
+                LOGGER.warning("Cancel auction: {}".format(
                     self.auction_doc_id
                 ), extra={"JOURNAL_REQUEST_ID": self.request_id,
                           "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_CANCEL})
             else:
-                logger.error("Auction {} not exists".format(
+                LOGGER.error("Auction {} not exists".format(
                     self.auction_doc_id
                 ), extra={"JOURNAL_REQUEST_ID": self.request_id,
                           "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_NOT_EXIST})
@@ -64,7 +64,7 @@ def get_auction_info(self, prepare=False):
                     for bid in self._auction_data["data"]["bids"]
                     if bid.get('status', 'active') == 'active']
     self.bidders_count = len(self.bidders)
-    logger.info("Bidders count: {}".format(self.bidders_count),
+    LOGGER.info("Bidders count: {}".format(self.bidders_count),
                 extra={"JOURNAL_REQUEST_ID": self.request_id,
                        "MESSAGE_ID": AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS})
     self.rounds_stages = []
@@ -165,10 +165,10 @@ def prepare_auction_and_participation_urls(self):
             )
         else:
             patch_data['data']['bids'].append({"id": bid["id"]})
-    logger.info("Set auction and participation urls for tender {}".format(self.tender_id),
+    LOGGER.info("Set auction and participation urls for tender {}".format(self.tender_id),
                 extra={"JOURNAL_REQUEST_ID": self.request_id,
                        "MESSAGE_ID": AUCTION_WORKER_SET_AUCTION_URLS})
-    logger.info(repr(patch_data))
+    LOGGER.info(repr(patch_data))
     make_request(self.tender_url + '/auction', patch_data,
                  user=self.worker_defaults["TENDERS_API_TOKEN"],
                  request_id=self.request_id, session=self.session)
@@ -184,7 +184,7 @@ def post_results_data(self, with_auctions_results=True):
                 self._auction_data["data"]["bids"][index]["date"] = auction_bid_info["time"]
 
     data = {'data': {'bids': self._auction_data["data"]['bids']}}
-    logger.info(
+    LOGGER.info(
         "Approved data: {}".format(data),
         extra={"JOURNAL_REQUEST_ID": self.request_id,
                "MESSAGE_ID": AUCTION_WORKER_API_APPROVED_DATA}

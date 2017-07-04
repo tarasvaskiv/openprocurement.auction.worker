@@ -4,6 +4,7 @@ import os
 version = '2.1.0'
 install_requires = [
     'setuptools',
+    'openprocurement.auction'
 ]
 extras_require = {
 }
