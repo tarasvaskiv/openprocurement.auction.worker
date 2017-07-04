@@ -11,8 +11,8 @@ from StringIO import StringIO
 from uuid import uuid4
 
 from openprocurement.auction.worker.auction import Auction, SCHEDULER
-from openprocurement.auction.worker.services import LOGGER
-from openprocurement.auction.tests.main import update_auctionPeriod
+from openprocurement.auction.worker.mixins import LOGGER
+from openprocurement.auction.tests.functional.main import update_auctionPeriod
 
 PWD = os.path.dirname(os.path.realpath(__file__))
 

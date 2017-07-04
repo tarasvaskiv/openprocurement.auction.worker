@@ -28,7 +28,7 @@ from openprocurement.auction.worker.journal import (
 )
 from openprocurement.auction.server import run_server
 from openprocurement.auction.executor import AuctionsExecutor
-from openprocurement.auction.worker.services import\
+from openprocurement.auction.worker.mixins import\
     DBServiceMixin, RequestIDServiceMixin, AuditServiceMixin,\
     DateTimeServiceMixin, BiddersServiceMixin, PostAuctionServiceMixin,\
     StagesServiceMixin, ROUNDS, TIMEZONE

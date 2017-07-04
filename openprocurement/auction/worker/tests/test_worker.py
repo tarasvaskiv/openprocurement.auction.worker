@@ -1,5 +1,10 @@
 import pytest
 
+from copy import deepcopy
+from requests import Session
+
+from openprocurement.auction.worker.auction import Auction
+from openprocurement.auction.worker.mixins import BiddersServiceMixin
 from openprocurement.auction.worker.tests.base import (
     auction, db, logger, scheduler
 )

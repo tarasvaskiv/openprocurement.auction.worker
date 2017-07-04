@@ -35,6 +35,7 @@ from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_SERVICE_START_NEXT_STAGE,
 )
 
+
 LOGGER = logging.getLogger("Auction Worker")
 
 
