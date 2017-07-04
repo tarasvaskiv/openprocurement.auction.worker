@@ -1,7 +1,7 @@
 from copy import deepcopy
 from requests import Session
 
-from openprocurement.auction.worker.services import AuditServiceMixin
+from openprocurement.auction.worker.mixins import AuditServiceMixin
 from openprocurement.auction.worker.tests.base import (
     auction, multilot_auction, db, logger, scheduler,
     tender_data, test_organization, lot_tender_data
