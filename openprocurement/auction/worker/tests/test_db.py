@@ -1,4 +1,5 @@
 import pytest
+import errno
 
 from copy import deepcopy
 
@@ -202,26 +203,25 @@ def test_prepare_auction_document_false_no_debug(auction, db, mocker):
     assert mock_set_auction_and_participation_urls.call_count == 1
 
 
-@pytest.mark.skip  # TODO: right set of side_effect for session mocked object is needed
 def test_prepare_auction_document_smd_fast_forward_no_debug(auction, db, mocker):
     auction.debug = False
 
     test_bids = deepcopy(tender_data['data']['bids'])
-
+    auction_period = tender_data['data']['auctionPeriod']
     for bid in test_bids:
         bid['tenderers'] = [test_organization]
     mock_session_request = mocker.patch.object(auction.session, 'request', autospec=True)
-    mock_session_request.return_value.json.side_effect = [
-        {'data': {'bids': test_bids}},
-        auction._auction_data,
-    ]
+    mock_session_request.return_value.json.return_value = {'data': {
+            'bids': test_bids,
+            'auctionPeriod': auction_period,
+            'submissionMethodDetails': 'quick(mode:fast-forward)'
+        }
+    }
+
     mock_set_auction_and_participation_urls = mocker.patch.object(Auction, 'set_auction_and_participation_urls', autospec=True)
-    auction._auction_data['data']['submissionMethodDetails'] = 'quick(mode:fast-forward)'
-    # import pdb; pdb.set_trace()
     auction.prepare_auction_document()
     assert mock_set_auction_and_participation_urls.called is True
     assert mock_set_auction_and_participation_urls.call_count == 1
-    del auction._auction_data['data']['submissionMethodDetails']
 
 
 def test_prepare_public_document(auction, db):
@@ -270,13 +270,17 @@ def test_get_auction_document(auction, db, mocker, logger):
     mock_db_get.side_effect = [
         HTTPError('status code is >= 400'),
         Exception('unhandled error message'),
+        Exception(errno.EPIPE, 'retryable error message'),
         res
     ]
     auction.get_auction_document()
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert log_strings[5] == 'Error while get document: status code is >= 400'
     assert log_strings[6] == 'Unhandled error: unhandled error message'
-    assert log_strings[7] == 'Get auction document {0} with rev {1}'.format(res['_id'], res['_rev'])
+    assert log_strings[7] == "Error while get document: (32, 'retryable error message')"
+    assert log_strings[8] == 'Get auction document {0} with rev {1}'.format(res['_id'], res['_rev'])
+
+    assert mock_db_get.call_count == 4
 
 
 def test_save_auction_document(auction, db, mocker, logger):
@@ -290,6 +294,7 @@ def test_save_auction_document(auction, db, mocker, logger):
     mock_db_save.side_effect = [
         HTTPError('status code is >= 400'),
         Exception('unhandled error message'),
+        Exception(errno.EPIPE, 'retryable error message'),
         (u'UA-222222', u'test-revision'),
     ]
     auction.save_auction_document()
@@ -298,6 +303,7 @@ def test_save_auction_document(auction, db, mocker, logger):
     assert 'Saved auction document UA-11111 with rev' in log_strings[1]
     assert log_strings[3] == 'Error while save document: status code is >= 400'
     assert log_strings[5] == 'Unhandled error: unhandled error message'
-    assert log_strings[7] == 'Saved auction document UA-222222 with rev test-revision'
+    assert log_strings[7] == "Error while save document: (32, 'retryable error message')"
+    assert log_strings[9] == 'Saved auction document UA-222222 with rev test-revision'
 
-    assert mock_db_save.call_count == 3
+    assert mock_db_save.call_count == 4
