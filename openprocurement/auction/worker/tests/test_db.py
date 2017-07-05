@@ -1,4 +1,5 @@
 import errno
+import pytest
 
 from copy import deepcopy
 
@@ -8,19 +9,19 @@ from couchdb.http import HTTPError
 from openprocurement.auction.worker.auction import Auction
 
 from openprocurement.auction.worker.tests.data.data import (
-    tender_data, test_organization
+    tender_data, test_organization, lot_tender_data
 )
 from openprocurement.auction.utils import filter_amount
 
 
-def test_get_auction_info_simple(auction, logger):
-    assert auction.rounds_stages == []
-    assert auction.mapping == {}
-    assert auction.bidders_data == []
-    auction.get_auction_info(prepare=False)
-    assert auction.rounds_stages == [1, 4, 7]
-    assert auction.bidders_count == 2
-    assert auction.mapping == {
+def test_get_auction_info_universal(universal_auction, logger):
+    assert universal_auction.rounds_stages == []
+    assert universal_auction.mapping == {}
+    assert universal_auction.bidders_data == []
+    universal_auction.get_auction_info(prepare=False)
+    assert universal_auction.rounds_stages == [1, 4, 7]
+    assert universal_auction.bidders_count == 2
+    assert universal_auction.mapping == {
         u'5675acc9232942e8940a034994ad883e': '2',
         u'd3ba84c66c9e4f34bfb33cc3c686f137': '1'
     }
@@ -38,50 +39,13 @@ def test_get_auction_info_simple(auction, logger):
     #                u'valueAddedTaxIncluded': True}}
     # ]
 
-    assert set(['date', 'id', 'value']) == set(auction.bidders_data[0].keys())
-    assert len(auction.bidders_data) == 2
+    assert set(['date', 'id', 'value']) == set(universal_auction.bidders_data[0].keys())
+    assert len(universal_auction.bidders_data) == 2
 
-    assert auction.bidders_data[0]['value']['amount'] == 475000.0
-    assert auction.bidders_data[0]['id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
-    assert auction.bidders_data[1]['value']['amount'] == 480000.0
-    assert auction.bidders_data[1]['id'] == '5675acc9232942e8940a034994ad883e'
-
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-    assert log_strings[0] == 'Bidders count: 2'
-
-
-def test_get_auction_info_multilot(multilot_auction, logger):
-    assert multilot_auction.rounds_stages == []
-    assert multilot_auction.mapping == {}
-    assert multilot_auction.bidders_data == []
-    multilot_auction.get_auction_info(prepare=False)
-    assert multilot_auction.rounds_stages == [1, 4, 7]
-    assert multilot_auction.bidders_count == 2
-    assert multilot_auction.mapping == {
-        u'5675acc9232942e8940a034994ad883e': '2',
-        u'd3ba84c66c9e4f34bfb33cc3c686f137': '1'
-    }
-
-    # auction.bidders_data == [
-    #     {'date': u'2014-11-19T08:22:21.726234+00:00',
-    #      'id': u'd3ba84c66c9e4f34bfb33cc3c686f137',
-    #      'value': {u'amount': 475000.0,
-    #                u'currency': None,
-    #                u'valueAddedTaxIncluded': True}},
-    #     {'date': u'2014-11-19T08:22:24.038426+00:00',
-    #      'id': u'5675acc9232942e8940a034994ad883e',
-    #      'value': {u'amount': 480000.0,
-    #                u'currency': None,
-    #                u'valueAddedTaxIncluded': True}}
-    # ]
-
-    assert set(['date', 'id', 'value']) == set(multilot_auction.bidders_data[0].keys())
-    assert len(multilot_auction.bidders_data) == 2
-
-    assert multilot_auction.bidders_data[0]['value']['amount'] == 475000.0
-    assert multilot_auction.bidders_data[0]['id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
-    assert multilot_auction.bidders_data[1]['value']['amount'] == 480000.0
-    assert multilot_auction.bidders_data[1]['id'] == '5675acc9232942e8940a034994ad883e'
+    assert universal_auction.bidders_data[0]['value']['amount'] == 475000.0
+    assert universal_auction.bidders_data[0]['id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
+    assert universal_auction.bidders_data[1]['value']['amount'] == 480000.0
+    assert universal_auction.bidders_data[1]['id'] == '5675acc9232942e8940a034994ad883e'
 
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert log_strings[0] == 'Bidders count: 2'
@@ -101,7 +65,7 @@ def test_prepare_auction_document(auction, db, mocker):
             'value', 'test_auction_data', 'auction_type', '_rev',
             'mode', 'TENDERS_API_VERSION', '_id', 'procuringEntity']) \
             == set(auction_document.keys()) == set(auction.auction_document.keys())
-    auction.prepare_auction_document() # TODO
+    auction.prepare_auction_document()  # method is calling to cover line, on which check public_document existence is passing
 
 
 def test_prepare_auction_document_multilot(multilot_auction, db, mocker):
@@ -120,22 +84,13 @@ def test_prepare_auction_document_multilot(multilot_auction, db, mocker):
             == set(auction_document.keys()) == set(multilot_auction.auction_document.keys())
 
 
-def test_prepare_auction_document_smd_no_auction(auction, db, mocker):
-    mock_session_request = mocker.patch.object(auction.session, 'request', autospec=True)
+def test_prepare_auction_document_smd_no_auction_universal(universal_auction, db, mocker):
+    mock_session_request = mocker.patch.object(universal_auction.session, 'request', autospec=True)
     mock_session_request.return_value.json.return_value = {'data': {}}
-    auction._auction_data['data']['submissionMethodDetails'] = 'quick(mode:no-auction)'
-    res = auction.prepare_auction_document()
+    universal_auction._auction_data['data']['submissionMethodDetails'] = 'quick(mode:no-auction)'
+    res = universal_auction.prepare_auction_document()
     assert res == 0
-    del auction._auction_data['data']['submissionMethodDetails']
-
-
-def test_prepare_auction_document_smd_no_auction_multilot(multilot_auction, db, mocker):
-    mock_session_request = mocker.patch.object(multilot_auction.session, 'request', autospec=True)
-    mock_session_request.return_value.json.return_value = {'data': {}}
-    multilot_auction._auction_data['data']['submissionMethodDetails'] = 'quick(mode:no-auction)'
-    res = multilot_auction.prepare_auction_document()
-    assert res == 0
-    del multilot_auction._auction_data['data']['submissionMethodDetails']
+    del universal_auction._auction_data['data']['submissionMethodDetails']
 
 
 def test_prepare_auction_document_smd_fast_forward(auction, db, mocker):

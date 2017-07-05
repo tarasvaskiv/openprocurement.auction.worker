@@ -32,6 +32,24 @@ with open(worker_defaults_file_path) as stream:
     worker_defaults = yaml.load(stream)
 
 
+@pytest.yield_fixture(
+    scope="function",
+    params=[
+        {'tender_data': tender_data, 'lot_id': False},
+        {'tender_data': lot_tender_data, 'lot_id': lot_tender_data['data']['lots'][0]['id']}
+    ],
+    ids=['simple', 'multilot']
+)
+def universal_auction(request):
+    update_auctionPeriod(request.param['tender_data'])
+
+    yield Auction(
+        tender_id=request.param['tender_data']['data']['tenderID'],
+        worker_defaults=yaml.load(open(worker_defaults_file_path)),
+        auction_data=request.param['tender_data'],
+        lot_id=request.param['lot_id']
+    )
+
 @pytest.yield_fixture(scope="function")
 def auction():
     update_auctionPeriod(tender_data)

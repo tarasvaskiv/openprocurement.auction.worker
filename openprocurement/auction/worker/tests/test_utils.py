@@ -6,8 +6,9 @@ def test_generate_request_id(auction):
     # Already set up in init method
     auction.request_id = 0
     auction.generate_request_id()
-    assert auction.request_id is not None
     assert "auction-req-" in auction.request_id
+    uuid4 = auction.request_id[len('auction-req-'):]
+    assert len(uuid4) == 36
 
 
 @pytest.mark.parametrize("test_input,expected", [

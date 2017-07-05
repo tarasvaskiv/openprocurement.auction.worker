@@ -35,9 +35,6 @@ def test_filter_bids_keys(auction, db):
     #   'time': '2014-11-19T08:22:21.726234+00:00'}]
 
     result = auction.filter_bids_keys(bids)
-    assert result is not None
-    bids[0]['test'] = 'test'
-    result = auction.filter_bids_keys(bids)
 
     # [{'amount': 480000.0,
     #   'bidder_id': u'5675acc9232942e8940a034994ad883e',
@@ -48,6 +45,15 @@ def test_filter_bids_keys(auction, db):
     #   'bidder_name': '1',
     #   'time': '2014-11-19T08:22:21.726234+00:00'}]
 
+    assert result[0]['amount'] == 480000.0
+    assert result[0]['bidder_id'] == '5675acc9232942e8940a034994ad883e'
+    assert result[0]['bidder_name'] == '2'
+    assert result[1]['amount'] == 475000.0
+    assert result[1]['bidder_id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
+    assert result[1]['bidder_name'] == '1'
+
+    bids[0]['test'] = 'test'
+    result = auction.filter_bids_keys(bids)
     assert 'test' not in result[0]
 
 
@@ -78,11 +84,9 @@ def test_filter_bids_keys_features(features_auction, db):
     #   'time': '2014-11-19T08:22:24.038426+00:00'}]
 
     result = features_auction.filter_bids_keys(bids)
-    assert result is not None
-    bids[0]['test'] = 'test'
-    result = features_auction.filter_bids_keys(bids)
     for item in result:
         assert 'coeficient', 'amount_features' in item.keys()
+    assert eval(result[0]['amount_features']) > eval(result[1]['amount_features'])
 
     # [{'amount': 475000.0,
     #   'amount_features': '1454662679640670217500/3422735716801577',
@@ -97,6 +101,8 @@ def test_filter_bids_keys_features(features_auction, db):
     #   'coeficient': '36028797018963968/30624477466119373',
     #   'time': '2014-11-19T08:22:24.038426+00:00'}]
 
+    bids[0]['test'] = 'test'
+    result = features_auction.filter_bids_keys(bids)
     assert 'test' not in result[0]
 
 
@@ -174,7 +180,7 @@ def test_approve_bids_information(auction, db, logger):
     auction.add_bid(7, test_bids[0])
 
     res = auction.approve_bids_information()
-    assert res is False
+    assert res is False  # actually returns False object
     assert auction.auction_document["stages"][7].get('changed') is None
     log_strings = log_strings = logger.log_capture_string.getvalue().split('\n')
 
@@ -214,14 +220,14 @@ def test_approve_bids_information_features(features_auction, db, logger):
 
     features_auction.current_stage = 5
     res = features_auction.approve_bids_information()
-    assert res is False
+    assert res is False  # actually returns False object
     assert features_auction.auction_document["stages"][5].get('changed') is None
 
     features_auction.add_bid(5, test_bids[1])
     features_auction.add_bid(5, test_bids[0])
 
     res = features_auction.approve_bids_information()
-    assert res is True
+    assert res is True  # actually returns True object
     current_stage = features_auction.auction_document["stages"][features_auction.current_stage]
     assert current_stage['amount'] == 480000.0
     assert current_stage['amount_features'] == '57420895248973824375/140737488355328'
