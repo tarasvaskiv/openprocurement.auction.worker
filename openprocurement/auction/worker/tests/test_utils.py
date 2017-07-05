@@ -1,8 +1,6 @@
 import datetime
 import pytest
 
-from openprocurement.auction.worker.tests.base import auction
-
 
 def test_generate_request_id(auction):
     # Already set up in init method

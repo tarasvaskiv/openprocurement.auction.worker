@@ -1,4 +1,3 @@
-import pytest
 import errno
 
 from copy import deepcopy
@@ -7,8 +6,8 @@ from couchdb import Database
 from couchdb.http import HTTPError
 
 from openprocurement.auction.worker.auction import Auction
-from openprocurement.auction.worker.tests.base import (
-    auction, multilot_auction, features_auction, logger, db,
+
+from openprocurement.auction.worker.tests.data.data import (
     tender_data, test_organization
 )
 from openprocurement.auction.utils import filter_amount
@@ -102,7 +101,7 @@ def test_prepare_auction_document(auction, db, mocker):
             'value', 'test_auction_data', 'auction_type', '_rev',
             'mode', 'TENDERS_API_VERSION', '_id', 'procuringEntity']) \
             == set(auction_document.keys()) == set(auction.auction_document.keys())
-    auction.prepare_auction_document()
+    auction.prepare_auction_document() # TODO
 
 
 def test_prepare_auction_document_multilot(multilot_auction, db, mocker):

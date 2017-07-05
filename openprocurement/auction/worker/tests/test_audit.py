@@ -1,9 +1,5 @@
 from requests import Session
 
-from openprocurement.auction.worker.tests.base import (
-    auction, features_auction, db, logger
-)
-
 
 def test_prepare_audit(auction, db):
     auction.prepare_audit()

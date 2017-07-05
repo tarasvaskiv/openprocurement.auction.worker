@@ -1,7 +1,4 @@
-from openprocurement.auction.worker.tests.base import (
-    auction, multilot_auction, features_auction, db, logger,
-    tender_data
-)
+from openprocurement.auction.worker.tests.data.data import tender_data
 
 
 def test_add_bid(auction, db):
