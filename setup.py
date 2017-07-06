@@ -22,7 +22,7 @@ ENTRY_POINTS = {
 }
 
 setup(name='openprocurement.auction.worker',
-      version=version,
+      version=VERSION,
       description="",
       long_description=open("README.txt").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
@@ -41,7 +41,7 @@ setup(name='openprocurement.auction.worker',
       namespace_packages=['openprocurement', 'openprocurement.auction'],
       include_package_data=True,
       zip_safe=False,
-      install_requires=install_requires,
-      extras_require=extras_require,
-      entry_points=entry_points,
+      install_requires=INSTALL_REQUIRES,
+      extras_require=EXTRAS_REQUIRE,
+      entry_points=ENTRY_POINTS,
       )
