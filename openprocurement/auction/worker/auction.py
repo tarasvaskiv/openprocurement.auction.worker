@@ -32,7 +32,7 @@ from openprocurement.auction.worker.mixins import\
     DBServiceMixin, RequestIDServiceMixin, AuditServiceMixin,\
     DateTimeServiceMixin, BiddersServiceMixin, PostAuctionServiceMixin,\
     StagesServiceMixin, ROUNDS, TIMEZONE
-from openprocurement.auction.templates import \
+from openprocurement.auction.worker.utils import \
     prepare_initial_bid_stage, prepare_results_stage
 
 from openprocurement.auction.utils import\
