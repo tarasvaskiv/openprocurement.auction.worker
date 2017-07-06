@@ -1,9 +1,5 @@
 from requests import Session
 
-from openprocurement.auction.worker.tests.base import (
-    auction, features_auction, db, logger
-)
-
 
 def test_prepare_audit(auction, db):
     auction.prepare_audit()
@@ -53,14 +49,6 @@ def test_approve_audit_info_on_bid_stage(auction, db):
     #                                'round_3': {'turn_1': {'bidder': u'5675acc9232942e8940a034994ad883e',
     #                                                       'time': '2017-06-23T13:18:49.764132+03:00'}}}}
 
-    assert set(['id', 'tenderId', 'tender_id', 'timeline']) == set(auction.audit.keys())
-    assert auction.audit['id'] == 'UA-11111'
-    assert auction.audit['tenderId'] == 'UA-11111'
-    assert auction.audit['tender_id'] == 'UA-11111'
-    assert len(auction.audit['timeline']) == 4
-    assert 'auction_start' in auction.audit['timeline']
-    for i in range(1, len(auction.audit['timeline'])):
-        assert 'round_{0}'.format(i) in auction.audit['timeline'].keys()
     assert 'turn_1' in auction.audit['timeline']['round_3']
     assert auction.audit['timeline']['round_3']['turn_1']['bidder'] == '5675acc9232942e8940a034994ad883e'
 
@@ -122,12 +110,7 @@ def test_approve_audit_info_on_announcement(auction, db):
     #               'round_2': {},
     #               'round_3': {}}}
 
-    assert set(['id', 'tenderId', 'tender_id', 'timeline']) == set(auction.audit.keys())
-    assert auction.audit['id'] == 'UA-11111'
-    assert auction.audit['tenderId'] == 'UA-11111'
-    assert auction.audit['tender_id'] == 'UA-11111'
     assert len(auction.audit['timeline']) == 5
-    assert 'auction_start' in auction.audit['timeline']
     assert 'results' in auction.audit['timeline']
     for i in range(2, len(auction.audit['timeline'])):
         assert 'round_{0}'.format(i-1) in auction.audit['timeline'].keys()
@@ -141,14 +124,14 @@ def test_approve_audit_info_on_announcement(auction, db):
     assert results['bids'][1]['bidder'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
 
 
-def test_upload_audit_file_without_document_service(auction, db, logger, mocker):
+def test_upload_audit_file_with_document_service(auction, db, logger, mocker):
     from requests import Session as RequestsSession
     auction.session_ds = RequestsSession()
     auction.prepare_auction_document()
     auction.get_auction_info()
 
     res = auction.upload_audit_file_with_document_service()
-    assert res is None
+    assert res is None  # method does not return anything
 
     mock_session_request = mocker.patch.object(Session, 'request', autospec=True)
 
@@ -165,11 +148,11 @@ def test_upload_audit_file_without_document_service(auction, db, logger, mocker)
     assert log_strings[3] == 'Audit log not approved.'
 
 
-def test_upload_audit_file_with_document_service(auction, db, logger):
+def test_upload_audit_file_without_document_service(auction, db, logger):
     auction.prepare_auction_document()
     auction.get_auction_info()
 
     res = auction.upload_audit_file_without_document_service()
-    assert res is None
+    assert res is None  # method does not return anything
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert log_strings[3] == 'Audit log not approved.'

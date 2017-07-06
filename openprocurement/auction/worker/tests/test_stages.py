@@ -2,10 +2,7 @@ import pytest
 
 from openprocurement.auction.worker.auction import Auction
 from openprocurement.auction.worker.mixins import BiddersServiceMixin
-
-from openprocurement.auction.worker.tests.base import (
-    auction, features_auction, db, logger, features_tender_data
-)
+from openprocurement.auction.worker.tests.data.data import features_tender_data
 
 
 @pytest.mark.parametrize("test_input,expected", [(-1, 0), (2, 1), (6, 2), (10, 3)])

@@ -2,8 +2,7 @@ from copy import deepcopy
 from requests import Session
 
 from openprocurement.auction.worker.mixins import AuditServiceMixin
-from openprocurement.auction.worker.tests.base import (
-    auction, multilot_auction, db, logger, scheduler,
+from openprocurement.auction.worker.tests.data.data import (
     tender_data, test_organization, lot_tender_data
 )
 
@@ -82,7 +81,7 @@ def test_put_auction_data(auction, db, mocker, logger):
     auction.prepare_audit()
 
     response = auction.put_auction_data()
-    assert response is True
+    assert response is True # actually returns True object
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert "Auctions results not approved" not in log_strings
 
@@ -92,7 +91,7 @@ def test_put_auction_data(auction, db, mocker, logger):
     ]
 
     response = auction.put_auction_data()
-    assert response is None
+    assert response is None  # method does not return anything
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert "Auctions results not approved" in log_strings
 
@@ -145,7 +144,8 @@ def test_put_auction_data_multilot(multilot_auction, db, mocker, logger):
     multilot_auction.prepare_audit()
 
     response = multilot_auction.put_auction_data()
-    assert response is None
+
+    assert response is None  # method does not return anything
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert "Auctions results not approved" not in log_strings
 
@@ -155,6 +155,6 @@ def test_put_auction_data_multilot(multilot_auction, db, mocker, logger):
     ]
 
     response = multilot_auction.put_auction_data()
-    assert response is None
+    assert response is None  # method does not return anything
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert "Auctions results not approved" in log_strings
