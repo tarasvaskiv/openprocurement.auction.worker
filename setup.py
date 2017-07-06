@@ -1,14 +1,21 @@
 from setuptools import setup, find_packages
 import os
 
-version = '2.1.0'
-install_requires = [
+VERSION = '2.1.0'
+INSTALL_REQUIRES = [
     'setuptools',
-    'openprocurement.auction'
+    'openprocurement.auction',
+    'WTForms',
+    'WTForms-JSON',
 ]
-extras_require = {
+EXTRAS_REQUIRE = {
+    'test': [
+        'pytest',
+        'pytest-mock',
+        'pytest-cov'
+    ]
 }
-entry_points = {
+ENTRY_POINTS = {
     'console_scripts': [
         'auction_worker = openprocurement.auction.worker.cli:main',
     ]
