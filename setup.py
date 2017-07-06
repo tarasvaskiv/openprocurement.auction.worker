@@ -18,6 +18,14 @@ EXTRAS_REQUIRE = {
 ENTRY_POINTS = {
     'console_scripts': [
         'auction_worker = openprocurement.auction.worker.cli:main',
+    ],
+    'openprocurement.auction.auctions': [
+        'belowThreshold = openprocurement.auction.worker.includeme:belowThreshold',
+        'aboveThresholdUA = openprocurement.auction.worker.includeme:aboveThresholdUA',
+        'aboveThresholdEU = openprocurement.auction.worker.includeme:aboveThresholdEU',
+        'competitiveDialogueEU.stage2 = openprocurement.auction.worker.includeme:competitiveDialogueEU',
+        'competitiveDialogueUA.stage2 = openprocurement.auction.worker.includeme:competitiveDialogueUA',
+        'aboveThresholdUA.defense = openprocurement.auction.worker.includeme:aboveThresholdUAdefense',
     ]
 }
 
