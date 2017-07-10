@@ -22,6 +22,4 @@ install:
   - bin/buildout -N
   - curl -X PUT 0.0.0.0:5984/auctions
 script:
-  - bin/pytest openprocurement/
-after_success:
-  - bin/coveralls
+  - bin/pytest openprocurement/auction/worker/tests
