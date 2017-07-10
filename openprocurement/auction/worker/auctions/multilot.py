@@ -1,13 +1,13 @@
 import logging
 import copy
 import sys
-from openprocurement.auction.templates import prepare_service_stage
 from openprocurement.auction.utils import (
     get_tender_data,
     get_latest_bid_for_bidder,
     calculate_hash,
     make_request
 )
+from openprocurement.auction.worker.utils import prepare_service_stage
 from openprocurement.auction.worker.journal import(
     AUCTION_WORKER_API_AUCTION_CANCEL,
     AUCTION_WORKER_API_AUCTION_NOT_EXIST,

@@ -15,7 +15,7 @@ from openprocurement.auction.utils import\
     sorting_start_bids_by_amount
 from openprocurement.auction.worker.auctions import\
     simple, multilot
-from openprocurement.auction.templates import prepare_bids_stage,\
+from openprocurement.auction.worker.utils import prepare_bids_stage,\
     prepare_service_stage, prepare_initial_bid_stage, prepare_results_stage
 from openprocurement.auction.worker.constants import ROUNDS, TIMEZONE, BIDS_SECONDS,\
     FIRST_PAUSE_SECONDS, PAUSE_SECONDS, BIDS_KEYS_FOR_COPY

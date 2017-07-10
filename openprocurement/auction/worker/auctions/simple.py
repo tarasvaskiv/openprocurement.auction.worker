@@ -1,14 +1,13 @@
-
 import logging
 
 import sys
-from openprocurement.auction.templates import prepare_service_stage
 from openprocurement.auction.utils import (
     get_tender_data,
     get_latest_bid_for_bidder,
     calculate_hash,
     make_request
 )
+from openprocurement.auction.worker.utils import prepare_service_stage
 from openprocurement.auction.worker.journal import(
     AUCTION_WORKER_API_AUCTION_CANCEL,
     AUCTION_WORKER_API_AUCTION_NOT_EXIST,
@@ -113,7 +112,7 @@ def prepare_auction_document(self):
         {"_id": self.auction_doc_id,
          "stages": [],
          "tenderID": self._auction_data["data"].get("tenderID", ""),
-         "procurementMethodType": self._auction_data["data"].get("procurementMethodType", ""),
+         "procurementMethodType": self._auction_data["data"].get("procurementMethodType", "default"),
          "TENDERS_API_VERSION": self.worker_defaults["TENDERS_API_VERSION"],
          "initial_bids": [],
          "current_stage": -1,

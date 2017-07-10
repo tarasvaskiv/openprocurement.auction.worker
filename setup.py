@@ -1,21 +1,36 @@
 from setuptools import setup, find_packages
 import os
 
-version = '2.1.0'
-install_requires = [
+VERSION = '2.1.0'
+INSTALL_REQUIRES = [
     'setuptools',
-    'openprocurement.auction'
+    'openprocurement.auction',
+    'WTForms',
+    'WTForms-JSON',
 ]
-extras_require = {
+EXTRAS_REQUIRE = {
+    'test': [
+        'pytest',
+        'pytest-mock',
+        'pytest-cov'
+    ]
 }
-entry_points = {
+ENTRY_POINTS = {
     'console_scripts': [
         'auction_worker = openprocurement.auction.worker.cli:main',
+    ],
+    'openprocurement.auction.auctions': [
+        'belowThreshold = openprocurement.auction.worker.includeme:belowThreshold',
+        'aboveThresholdUA = openprocurement.auction.worker.includeme:aboveThresholdUA',
+        'aboveThresholdEU = openprocurement.auction.worker.includeme:aboveThresholdEU',
+        'competitiveDialogueEU.stage2 = openprocurement.auction.worker.includeme:competitiveDialogueEU',
+        'competitiveDialogueUA.stage2 = openprocurement.auction.worker.includeme:competitiveDialogueUA',
+        'aboveThresholdUA.defense = openprocurement.auction.worker.includeme:aboveThresholdUAdefense',
     ]
 }
 
 setup(name='openprocurement.auction.worker',
-      version=version,
+      version=VERSION,
       description="",
       long_description=open("README.txt").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
@@ -34,7 +49,7 @@ setup(name='openprocurement.auction.worker',
       namespace_packages=['openprocurement', 'openprocurement.auction'],
       include_package_data=True,
       zip_safe=False,
-      install_requires=install_requires,
-      extras_require=extras_require,
-      entry_points=entry_points,
+      install_requires=INSTALL_REQUIRES,
+      extras_require=EXTRAS_REQUIRE,
+      entry_points=ENTRY_POINTS,
       )
