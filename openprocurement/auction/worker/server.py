@@ -10,7 +10,7 @@ from gevent import socket
 import errno
 from datetime import datetime, timedelta
 from pytz import timezone
-from openprocurement.auction.worker.forms import BidsForm
+from openprocurement.auction.worker.forms import BidsForm, form_handler
 from openprocurement.auction.helpers.system import get_lisener
 from openprocurement.auction.utils import create_mapping,\
     prepare_extra_journal_fields, get_bidder_id
@@ -185,42 +185,13 @@ def logout():
     )
 
 
+
 @app.route('/postbid', methods=['POST'])
 def post_bid():
-    auction = app.config['auction']
     if 'remote_oauth' in session and 'client_id' in session:
         bidder_data = get_bidder_id(app, session)
         if bidder_data and bidder_data['bidder_id'] == request.json['bidder_id']:
-            with auction.bids_actions:
-                form = BidsForm.from_json(request.json)
-                form.auction = auction
-                form.document = auction.db.get(auction.auction_doc_id)
-                current_time = datetime.now(timezone('Europe/Kiev'))
-                if form.validate():
-                    # write data
-                    auction.add_bid(form.document['current_stage'],
-                                    {'amount': form.data['bid'],
-                                     'bidder_id': form.data['bidder_id'],
-                                     'time': current_time.isoformat()})
-                    if form.data['bid'] == -1.0:
-                        app.logger.info("Bidder {} with client_id {} canceled bids in stage {} in {}".format(
-                            form.data['bidder_id'], session['client_id'],
-                            form.document['current_stage'], current_time.isoformat()
-                        ), extra=prepare_extra_journal_fields(request.headers))
-                    else:
-                        app.logger.info("Bidder {} with client_id {} placed bid {} in {}".format(
-                            form.data['bidder_id'], session['client_id'],
-                            form.data['bid'], current_time.isoformat()
-                        ), extra=prepare_extra_journal_fields(request.headers))
-                    response = {'status': 'ok', 'data': form.data}
-                else:
-                    response = {'status': 'failed', 'errors': form.errors}
-                    app.logger.info("Bidder {} with client_id {} wants place bid {} in {} with errors {}".format(
-                        request.json.get('bidder_id', 'None'), session['client_id'],
-                        request.json.get('bid', 'None'), current_time.isoformat(),
-                        repr(form.errors)
-                    ), extra=prepare_extra_journal_fields(request.headers))
-                return jsonify(response)
+            return jsonify(app.form_handler())            
         else:
             app.logger.warning("Client with client id: {} and bidder_id {} wants post bid but response status from Oauth".format(
                 session.get('client_id', 'None'), request.json.get('bidder_id', 'None')
@@ -247,7 +218,8 @@ def kickclient():
     abort(401)
 
 
-def run_server(auction, mapping_expire_time, logger, timezone='Europe/Kiev', cookie_path='tenders'):
+def run_server(auction, mapping_expire_time, logger,
+               timezone='Europe/Kiev', bids_form=BidsForm, form_handler=form_handler, cookie_path='tenders'):
     app.config.update(auction.worker_defaults)
     # Replace Flask custom logger
     app.logger_name = logger.name
@@ -257,6 +229,8 @@ def run_server(auction, mapping_expire_time, logger, timezone='Europe/Kiev', coo
     app.config['SESSION_COOKIE_PATH'] = '/{}/{}'.format(cookie_path, auction.auction_doc_id)
     app.config['SESSION_COOKIE_NAME'] = 'auction_session'
     app.oauth = OAuth(app)
+    app.bids_form = bids_form
+    app.form_handler = form_handler
     app.remote_oauth = app.oauth.remote_app(
         'remote',
         consumer_key=app.config['OAUTH_CLIENT_ID'],
