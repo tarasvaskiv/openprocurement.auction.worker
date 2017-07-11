@@ -247,14 +247,14 @@ def kickclient():
     abort(401)
 
 
-def run_server(auction, mapping_expire_time, logger, timezone='Europe/Kiev'):
+def run_server(auction, mapping_expire_time, logger, timezone='Europe/Kiev', cookie_path='tenders'):
     app.config.update(auction.worker_defaults)
     # Replace Flask custom logger
     app.logger_name = logger.name
     app._logger = logger
     app.config['auction'] = auction
     app.config['timezone'] = tz(timezone)
-    app.config['SESSION_COOKIE_PATH'] = '/tenders/{}'.format(auction.auction_doc_id)
+    app.config['SESSION_COOKIE_PATH'] = '/{}/{}'.format(cookie_path, auction.auction_doc_id)
     app.config['SESSION_COOKIE_NAME'] = 'auction_session'
     app.oauth = OAuth(app)
     app.remote_oauth = app.oauth.remote_app(
