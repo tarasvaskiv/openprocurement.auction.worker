@@ -191,7 +191,7 @@ def post_bid():
     if 'remote_oauth' in session and 'client_id' in session:
         bidder_data = get_bidder_id(app, session)
         if bidder_data and bidder_data['bidder_id'] == request.json['bidder_id']:
-            return jsonify(app.form_handler())            
+            return jsonify(app.form_handler())
         else:
             app.logger.warning("Client with client id: {} and bidder_id {} wants post bid but response status from Oauth".format(
                 session.get('client_id', 'None'), request.json.get('bidder_id', 'None')
