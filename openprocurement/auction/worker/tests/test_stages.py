@@ -66,11 +66,11 @@ def test_prepare_auction_stages_fast_forward(auction, db):
     results = auction.auction_document['results']
     assert len(results) == 2
 
-    assert results[0]['amount'] == 480000.0
-    assert results[0]['bidder_id'] == '5675acc9232942e8940a034994ad883e'
+    assert results[0]['amount'] == 475000.0
+    assert results[0]['bidder_id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
 
-    assert results[1]['amount'] == 475000.0
-    assert results[1]['bidder_id'] == 'd3ba84c66c9e4f34bfb33cc3c686f137'
+    assert results[1]['amount'] == 480000.0
+    assert results[1]['bidder_id'] == '5675acc9232942e8940a034994ad883e'
 
 
 def test_prepare_auction_stages_fast_forward_features(features_auction, db, mocker):
