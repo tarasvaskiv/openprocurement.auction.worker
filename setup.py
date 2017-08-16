@@ -25,7 +25,10 @@ ENTRY_POINTS = {
     ],
     'openprocurement.auction.routes': [
         'tenders = openprocurement.auction.worker.views:includeme',
-    ]
+    ],
+    'openprocurement.auction.robottests': [
+        'insider = openprocurement.auction.worker.tests.functional.main:includeme'
+    ],
 }
 
 setup(name='openprocurement.auction.worker',
