@@ -31,7 +31,6 @@
 		    }
 	    }
     ],
-    "procurementMethodType": "belowThreshold",
     "value": {
       "currency": "UAH",
       "amount": 500000.0,
