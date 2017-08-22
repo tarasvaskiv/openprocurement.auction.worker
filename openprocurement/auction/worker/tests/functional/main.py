@@ -50,8 +50,7 @@ TESTS = {
                       ' --planning_procerude partial_db --auction_info {2}',
         "runner": run_simple,
         'auction_worker_defaults': 'auction_worker_defaults:{0}/etc/auction_worker_defaults.yaml',
-        'suite': PWD,
-        'cwd': CWD,
+        'suite': PWD
     },
     "multilot": {
         "worker_cmd": '{0}/bin/auction_worker planning {1}'
@@ -59,8 +58,7 @@ TESTS = {
                       ' --planning_procerude partial_db --auction_info {2} --lot {3}',
         "runner": run_multilot,
         'auction_worker_defaults': 'auction_worker_defaults:{0}/etc/auction_worker_defaults.yaml',
-        "suite": PWD,
-        'cwd': CWD,
+        "suite": PWD
     }
 }
 
