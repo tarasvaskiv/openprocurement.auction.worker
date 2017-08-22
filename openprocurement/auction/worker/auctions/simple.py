@@ -59,10 +59,10 @@ def get_auction_info(self, prepare=False):
                           "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_NOT_EXIST})
             self._end_auction_event.set()
             sys.exit(1)
-    self.bidders = [bid["id"]
-                    for bid in self._auction_data["data"]["bids"]
-                    if bid.get('status', 'active') == 'active']
-    self.bidders_count = len(self.bidders)
+    self.bidders_count = len([
+        bid["id"] for bid in self._auction_data["data"]["bids"]
+        if bid.get('status', 'active') == 'active'
+    ])
     LOGGER.info("Bidders count: {}".format(self.bidders_count),
                 extra={"JOURNAL_REQUEST_ID": self.request_id,
                        "MESSAGE_ID": AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS})
