@@ -101,16 +101,19 @@ def login():
 @app.route('/authorized')
 def authorized():
     if not('error' in request.args and request.args['error'] == 'access_denied'):
-        resp = app.remote_oauth.authorized_response()
         if resp is None or hasattr(resp, 'data'):
             app.logger.info("Error Response from Oauth: {}".format(resp))
             return abort(403, 'Access denied')
+        resp = app.remote_oauth.authorized_response()
         app.logger.info("Get response from Oauth: {}".format(repr(resp)))
         session['remote_oauth'] = (resp['access_token'], '')
         session['client_id'] = os.urandom(16).encode('hex')
+    else:
+        app.logger.info("Error on user authorization. Error: {}".format(request.get('error', '')))
+        return abort(403, 'Access denied')
     bidder_data = get_bidder_id(app, session)
     app.logger.info("Bidder {} with client_id {} authorized".format(
-                    bidder_data['bidder_id'], session['client_id'],
+                    bidder_data.get('bidder_id'), session.get('client_id'),
                     ), extra=prepare_extra_journal_fields(request.headers))
 
     app.logger.debug("Session: {}".format(repr(session)))
