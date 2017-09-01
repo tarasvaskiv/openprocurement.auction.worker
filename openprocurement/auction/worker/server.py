@@ -101,10 +101,10 @@ def login():
 @app.route('/authorized')
 def authorized():
     if not('error' in request.args and request.args['error'] == 'access_denied'):
+        resp = app.remote_oauth.authorized_response()
         if resp is None or hasattr(resp, 'data'):
             app.logger.info("Error Response from Oauth: {}".format(resp))
             return abort(403, 'Access denied')
-        resp = app.remote_oauth.authorized_response()
         app.logger.info("Get response from Oauth: {}".format(repr(resp)))
         session['remote_oauth'] = (resp['access_token'], '')
         session['client_id'] = os.urandom(16).encode('hex')
