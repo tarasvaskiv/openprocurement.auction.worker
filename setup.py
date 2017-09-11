@@ -22,7 +22,7 @@ ENTRY_POINTS = {
     ],
     'openprocurement.auction.auctions': [
         'dgfOtherAssets = openprocurement.auction.worker.includeme:dgfOtherAssets',
-        'dgfFinancialAssets = openprocurement.auction.worker.includeme:dgfOtherAssets',
+        'dgfFinancialAssets = openprocurement.auction.worker.includeme:dgfFinancialAssets',
     ],
     'openprocurement.auction.routes': [
         'tenders = openprocurement.auction.worker.views:includeme',
