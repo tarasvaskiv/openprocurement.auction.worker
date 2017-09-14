@@ -7,6 +7,7 @@ from couchdb import Database
 from couchdb.http import HTTPError
 
 from openprocurement.auction.worker.auction import Auction
+from openprocurement.auction.worker.constants import BIDS_KEYS_FOR_COPY
 
 from openprocurement.auction.worker.tests.data.data import (
     tender_data, test_organization, lot_tender_data
@@ -39,7 +40,6 @@ def test_get_auction_info_universal(universal_auction, logger):
     #                u'valueAddedTaxIncluded': True}}
     # ]
 
-    assert set(['date', 'id', 'value']) == set(universal_auction.bidders_data[0].keys())
     assert len(universal_auction.bidders_data) == 2
 
     assert universal_auction.bidders_data[0]['value']['amount'] == 475000.0
@@ -59,7 +59,7 @@ def test_prepare_auction_document(auction, db, mocker):
     assert auction_document['_id'] == 'UA-11111'
     assert auction_document['_rev'] == auction.auction_document['_rev']
     assert '_rev' in auction_document
-    assert set(['tenderID', 'initial_bids', 'current_stage',
+    assert set(['auctionID', 'initial_bids', 'current_stage',
             'description', 'title', 'minimalStep', 'items',
             'stages', 'procurementMethodType', 'results',
             'value', 'test_auction_data', 'auction_type', '_rev',
@@ -76,7 +76,7 @@ def test_prepare_auction_document_multilot(multilot_auction, db, mocker):
     assert auction_document['_id'] == 'UA-11111_2222222222222222'
     assert auction_document['_rev'] == multilot_auction.auction_document['_rev']
     assert '_rev' in auction_document
-    assert set(['tenderID', 'initial_bids', 'current_stage',
+    assert set(['auctionID', 'initial_bids', 'current_stage',
             'description', 'title', 'minimalStep', 'items',
             'stages', 'procurementMethodType', 'results',
             'value', 'test_auction_data', 'auction_type', '_rev',
@@ -111,7 +111,7 @@ def test_prepare_auction_document_smd_fast_forward(auction, db, mocker):
     assert auction_document['_id'] == 'UA-11111'
     assert auction_document['_rev'] == auction.auction_document['_rev']
     assert '_rev' in auction_document
-    assert set(['tenderID', 'initial_bids', 'current_stage',
+    assert set(['auctionID', 'initial_bids', 'current_stage',
                 'description', 'title', 'minimalStep', 'items',
                 'stages', 'procurementMethodType', 'results',
                 'value', 'test_auction_data', 'auction_type', '_rev',
@@ -138,7 +138,7 @@ def test_prepare_auction_document_smd_fast_forward_multilot(multilot_auction, db
     assert auction_document['_id'] == 'UA-11111_2222222222222222'
     assert auction_document['_rev'] == multilot_auction.auction_document['_rev']
     assert '_rev' in auction_document
-    assert set(['tenderID', 'initial_bids', 'current_stage',
+    assert set(['auctionID', 'initial_bids', 'current_stage',
                 'description', 'title', 'minimalStep', 'items',
                 'stages', 'procurementMethodType', 'results',
                 'value', 'test_auction_data', 'auction_type', '_rev', 'lot',
@@ -183,7 +183,7 @@ def test_prepare_public_document(auction, db):
     auction.get_auction_info()
     auction.prepare_auction_stages()
     res = auction.prepare_public_document()
-    assert set(['value', 'initial_bids', 'tenderID', 'description', 'title', 'minimalStep',
+    assert set(['value', 'initial_bids', 'auctionID', 'description', 'title', 'minimalStep',
                 'items', '_rev', 'stages', 'procurementMethodType', 'results', 'auction_type',
                 'mode', 'test_auction_data', 'current_stage', 'TENDERS_API_VERSION', 'endDate',
                 '_id', 'procuringEntity']) == set(res.keys())
@@ -221,20 +221,22 @@ def test_get_auction_document(auction, db, mocker, logger):
     assert 'Rev error' in log_strings
 
     mock_db_get = mocker.patch.object(Database, 'get', autospec=True)
-    mock_db_get.side_effect = [
-        HTTPError('status code is >= 400'),
-        Exception('unhandled error message'),
-        Exception(errno.EPIPE, 'retryable error message'),
-        res
-    ]
-    auction.get_auction_document()
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-    assert log_strings[5] == 'Error while get document: status code is >= 400'
-    assert log_strings[6] == 'Unhandled error: unhandled error message'
-    assert log_strings[7] == "Error while get document: (32, 'retryable error message')"
-    assert log_strings[8] == 'Get auction document {0} with rev {1}'.format(res['_id'], res['_rev'])
-
-    assert mock_db_get.call_count == 4
+    for side, msg in zip([
+                HTTPError('status code is >= 400'),
+                Exception('unhandled error message'),
+                Exception(errno.EPIPE, 'retryable error message'),
+                res
+            ],
+            [
+                'Error while get document: status code is >= 400',
+                'Unhandled error: unhandled error message',
+                "Error while get document: (32, 'retryable error message')",
+                'Get auction document {0} with rev {1}'.format(res['_id'], res['_rev'])
+            ]):
+        mock_db_get.side_effect = side
+        auction.get_auction_document()
+        log_strings = logger.log_capture_string.getvalue().split('\n')
+        assert msg in log_strings
 
 
 def test_save_auction_document(auction, db, mocker, logger):
@@ -245,19 +247,16 @@ def test_save_auction_document(auction, db, mocker, logger):
     assert response[1] == auction.auction_document['_rev']
 
     mock_db_save = mocker.patch.object(Database, 'save', autospec=True)
-    mock_db_save.side_effect = [
+    for side, msg in zip([
         HTTPError('status code is >= 400'),
         Exception('unhandled error message'),
         Exception(errno.EPIPE, 'retryable error message'),
-        (u'UA-222222', u'test-revision'),
-    ]
-    auction.save_auction_document()
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-
-    assert 'Saved auction document UA-11111 with rev' in log_strings[1]
-    assert log_strings[3] == 'Error while save document: status code is >= 400'
-    assert log_strings[5] == 'Unhandled error: unhandled error message'
-    assert log_strings[7] == "Error while save document: (32, 'retryable error message')"
-    assert log_strings[9] == 'Saved auction document UA-222222 with rev test-revision'
-
-    assert mock_db_save.call_count == 4
+        ], [
+            'Error while save document: status code is >= 400',
+            'Unhandled error: unhandled error message',
+            "Error while save document: (32, 'retryable error message')",
+            ]):
+        mock_db_save.side_effect = side
+        auction.save_auction_document()
+        log_strings = logger.log_capture_string.getvalue().split('\n')
+        assert msg in log_strings

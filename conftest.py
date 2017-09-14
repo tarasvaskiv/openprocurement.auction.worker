@@ -44,7 +44,7 @@ def universal_auction(request):
     update_auctionPeriod(request.param['tender_data'])
 
     yield Auction(
-        tender_id=request.param['tender_data']['data']['tenderID'],
+        tender_id=request.param['tender_data']['data']['auctionID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
         auction_data=request.param['tender_data'],
         lot_id=request.param['lot_id']
@@ -55,7 +55,7 @@ def auction():
     update_auctionPeriod(tender_data)
 
     yield Auction(
-        tender_id=tender_data['data']['tenderID'],
+        tender_id=tender_data['data']['auctionID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
         auction_data=tender_data,
         lot_id=False
@@ -66,7 +66,7 @@ def auction():
 def multilot_auction():
 
     yield Auction(
-        tender_id=lot_tender_data['data']['tenderID'],
+        tender_id=lot_tender_data['data']['auctionID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
         auction_data=lot_tender_data,
         lot_id=lot_tender_data['data']['lots'][0]['id']
@@ -77,7 +77,7 @@ def multilot_auction():
 def features_auction():
 
     yield Auction(
-        tender_id=features_tender_data['data']['tenderID'],
+        tender_id=features_tender_data['data']['auctionID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
         auction_data=features_tender_data,
         lot_id=False

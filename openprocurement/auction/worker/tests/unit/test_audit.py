@@ -12,10 +12,10 @@ def test_prepare_audit(auction, db):
     #                                'round_2': {},
     #                                'round_3': {}}}
 
-    assert set(['id', 'tenderId', 'tender_id', 'timeline']) == set(auction.audit.keys())
+    assert set(['id', 'auctionId', 'auction_id', 'timeline', 'items']) == set(auction.audit.keys())
     assert auction.audit['id'] == 'UA-11111'
-    assert auction.audit['tenderId'] == 'UA-11111'
-    assert auction.audit['tender_id'] == 'UA-11111'
+    assert auction.audit['auctionId'] == 'UA-11111'
+    assert auction.audit['auction_id'] == 'UA-11111'
     assert len(auction.audit['timeline']) == 4
     assert 'auction_start' in auction.audit['timeline']
     for i in range(1, len(auction.audit['timeline'])):
