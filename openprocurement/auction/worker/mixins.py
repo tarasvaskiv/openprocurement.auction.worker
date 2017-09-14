@@ -137,9 +137,28 @@ class DBServiceMixin(object):
             submissionMethodDetails = self._auction_data['data'].get('submissionMethodDetails', '')
             if submissionMethodDetails == 'quick(mode:no-auction)':
                 if self.lot_id:
+                    bids_data = [] 
+                    for bid in self._auction_data['data']['bids']:
+                        for value in bid['lotValues']:
+                            if value['relatedLot'] == self.lot_id:
+                                bids_data.append({
+                                    "bidder_id": bid['id'],
+                                    "time": bid['date'],
+                                    "amount": value['value']['amount']
+                                })
+                    self.auction_document['results'] = bids_data
                     multilot.post_results_data(self, with_auctions_results=False)
                 else:
-                    simple.post_results_data(self, with_auctions_results=False)
+                    bids_data = [] 
+                    for bid in self._auction_data['data']['bids']:
+                        bids_data.append({
+                            "bidder_id": bid['id'],
+                            "time": bid['date'],
+                            "amount": bid['value']['amount']
+                            })
+                        self.auction_document['results'] = bids_data
+
+                    simple.post_results_data(self)
                 return 0
             elif submissionMethodDetails == 'quick(mode:fast-forward)':
                 if self.lot_id:
@@ -154,7 +173,7 @@ class DBServiceMixin(object):
                 if self.lot_id:
                     multilot.post_results_data(self, with_auctions_results=False)
                 else:
-                    simple.post_results_data(self, with_auctions_results=False)
+                    simple.post_results_data(self)
                     simple.announce_results_data(self, None)
                 self.save_auction_document()
                 return

@@ -174,7 +174,7 @@ def prepare_auction_and_participation_urls(self):
                  request_id=self.request_id, session=self.session)
 
 
-def post_results_data(self):
+def post_results_data(self, with_auction_results=True):
     all_bids = self.auction_document["results"]
 
     for index, bid_info in enumerate(self._auction_data["data"]["bids"]):
