@@ -18,7 +18,7 @@ from openprocurement.auction.worker.tests.data.data import (
 
 
 def update_auctionPeriod(data):
-    new_start_time = (datetime.datetime.now(tzlocal()) + datetime.timedelta(seconds=120)).isoformat()
+    new_start_time = (datetime.datetime.now(tzlocal()) + datetime.timedelta(seconds=1)).isoformat()
     if 'lots' in data['data']:
         for lot in data['data']['lots']:
             lot['auctionPeriod']['startDate'] = new_start_time
@@ -27,7 +27,7 @@ def update_auctionPeriod(data):
 
 PWD = os.path.dirname(os.path.realpath(__file__))
 
-worker_defaults_file_path = os.path.join(PWD, "openprocurement/auction/worker/tests/data/auction_worker_defaults.yaml")
+worker_defaults_file_path = os.path.join(PWD, "../data/auction_worker_defaults.yaml")
 with open(worker_defaults_file_path) as stream:
     worker_defaults = yaml.load(stream)
 
@@ -64,7 +64,6 @@ def auction():
 
 @pytest.yield_fixture(scope="function")
 def multilot_auction():
-
     yield Auction(
         tender_id=lot_tender_data['data']['auctionID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
@@ -75,7 +74,6 @@ def multilot_auction():
 
 @pytest.yield_fixture(scope="function")
 def features_auction():
-
     yield Auction(
         tender_id=features_tender_data['data']['auctionID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
