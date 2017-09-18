@@ -41,6 +41,7 @@ START_AUCTION_MESSAGES = [
      'Saved auction document UA-11111 with rev',
      'Job "Start of Auction',
 ]
+
 FIRST_PAUSE_MESSAGES = [
      'Removed job End of Pause Stage: [0 -> 1]',
      'Running job "End of Pause Stage: [0 -> 1] (trigger:',
@@ -49,6 +50,7 @@ FIRST_PAUSE_MESSAGES = [
      'Saved auction document UA-11111 with rev',
      'Job "End of Pause Stage: [0 -> 1] (trigger: date',
 ]
+
 BIDS_STAGES_MESSAGES = [
     'Removed job End of Bids Stage: [1 -> 2]',
     'Running job "End of Bids Stage: [1 -> 2] (trigger: date',
@@ -113,16 +115,24 @@ def wait_untill(date):
     sleep((date - now).seconds + 2)
 
 
+def check_logs(logs, params,  patterns):
+    for msg in params:
+        if any([i for i in patterns if i in msg]):
+            assert any([s for s in logs if msg in s])
+        else:
+            assert msg in logs
+
+
 def test_worker_init(auction, db, scheduler, logger):
     auction.prepare_auction_document()
     scheduler.start()
     auction.schedule_auction()
     log_strings = logger.log_capture_string.getvalue().split('\n')
-    for msg in INIT_WORKER_MESSAGES:
-        if any([i for i in ['auction', 'server', 'Server'] if i in msg]):
-            assert any([s for s in log_strings if msg in s])
-        else:
-            assert msg in log_strings
+    check_logs(log_strings, INIT_WORKER_MESSAGES, ['auction', 'server', 'Server'])
+    doc = auction._auction_data['data']
+    assert auction.audit['items'] == doc['items']
+    assert auction.audit['auction_id'] == auction.tender_id
+    assert auction.audit['auctionId'] == doc['auctionID']
     scheduler.shutdown(wait=False)
     _kill()
 
@@ -137,11 +147,31 @@ def test_auction_start(auction, db, scheduler, logger):
     )
 
     log_strings = logger.log_capture_string.getvalue().split('\n')
-    for msg in START_AUCTION_MESSAGES:
-        if any([i for i in ['document', 'job', 'Job'] if i in msg]):
-            assert any([s for s in log_strings if msg in s])
-        else:
-            assert msg in log_strings
+    check_logs(log_strings, START_AUCTION_MESSAGES, ['document', 'job', 'Job'])
+    assert auction.bidders_count == len(auction._auction_data['data']['bids'])
+    for bid in auction.auction_document['initial_bids']:
+        assert 'label' in bid
+        assert "Bidder #{}".format(auction.mapping[bid['bidder_id']]) == bid['label']['en']
+        for bidder in auction._auction_data['data']['bids']:
+            if bidder['id'] == bid['bidder_id']:
+                assert bidder['value']['amount'] == bid['amount']
+    # TODO: check time
+    assert auction.audit['timeline']['auction_start']['time']
+    assert auction.auction_document['current_stage'] == 0
+    assert auction.auction_document['initial_bids'] == auction.auction_document['results']
+    for stage in filter(lambda s: s['type'] == 'bids', auction.auction_document['stages']):
+        # TODO: check bids order
+        assert all([field in stage for field in ['bidder_id', 'label', 'start', 'type']])
+        for bid in auction._auction_data['data']['bids']:
+            if bid['id'] == stage['bidder_id']:
+                assert bid['value']['amount'] == stage['amount']
+
+    client = auction.server.application.test_client()
+    for bid in auction.bidders_data:
+        url = '/login?bidder_id={}&hash={}'.format(bid['id'], calculate_hash(bid['id'], auction.worker_defaults['HASH_SECRET']))
+        resp = client.get(url)
+        assert resp.status_code == 302
+        assert resp.status == '302 FOUND'
 
     scheduler.shutdown(wait=False)
     _kill()
@@ -158,12 +188,7 @@ def test_first_pause(auction, db, scheduler, logger):
     wait_untill(next_run)
 
     log_strings = logger.log_capture_string.getvalue().split('\n')
-    for msg in FIRST_PAUSE_MESSAGES:
-        if any([i for i in ['document', 'job', 'Job'] if i in msg]):
-            assert any([s for s in log_strings if msg in s])
-        else:
-            assert msg in log_strings
-
+    check_logs(log_strings, FIRST_PAUSE_MESSAGES, ['document', 'job', 'Job'])
     scheduler.shutdown(wait=False)
     _kill()
 
@@ -184,11 +209,6 @@ def test_bids_stages(auction, db, scheduler, logger):
         wait_untill(next_run)
         next_run = datetime.now(timezone('Europe/Kiev')) + timedelta(seconds=2)
     log_strings = logger.log_capture_string.getvalue().split('\n')
-    for msg in BIDS_STAGES_MESSAGES:
-        if any([i for i in ['document', 'date'] if i in msg]):
-            assert any([s for s in log_strings if msg in s])
-        else:
-            assert msg in log_strings
-
+    check_logs(log_strings, BIDS_STAGES_MESSAGES, ['document', 'date'])
     scheduler.shutdown(wait=False)
     _kill()
