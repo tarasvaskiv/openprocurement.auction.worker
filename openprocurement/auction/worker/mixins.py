@@ -246,7 +246,7 @@ class AuditServiceMixin(object):
             path = self.tender_url + '/documents'
 
         response = make_request(path, data=ds_response,
-                                user=self.worker_defaults["TENDERS_API_TOKEN"],
+                                user=self.worker_defaults["resource_api_token"],
                                 method=method, request_id=self.request_id, session=self.session,
                                 retry_count=2
                                 )
@@ -275,7 +275,7 @@ class AuditServiceMixin(object):
             path = self.tender_url + '/documents'
 
         response = make_request(path, files=files,
-                                user=self.worker_defaults["TENDERS_API_TOKEN"],
+                                user=self.worker_defaults["resource_api_token"],
                                 method=method, request_id=self.request_id, session=self.session,
                                 retry_count=2
                                 )
@@ -296,6 +296,7 @@ class AuditServiceMixin(object):
 
 class DateTimeServiceMixin(object):
     """ Simple time convertion mixin"""
+
     def convert_datetime(self, datetime_stamp):
         return iso8601.parse_date(datetime_stamp).astimezone(TIMEZONE)
 

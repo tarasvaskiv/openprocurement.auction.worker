@@ -8,7 +8,7 @@ from openprocurement.auction.utils import (
     make_request
 )
 from openprocurement.auction.worker.utils import prepare_service_stage
-from openprocurement.auction.worker.journal import(
+from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_API_AUCTION_CANCEL,
     AUCTION_WORKER_API_AUCTION_NOT_EXIST,
     AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS,
@@ -35,7 +35,7 @@ def get_auction_info(self, prepare=False):
             self._auction_data = {'data': {}}
         auction_data = get_tender_data(
             self.tender_url + '/auction',
-            user=self.worker_defaults["TENDERS_API_TOKEN"],
+            user=self.worker_defaults["resource_api_token"],
             request_id=self.request_id,
             session=self.session
         )
@@ -59,10 +59,10 @@ def get_auction_info(self, prepare=False):
                           "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_NOT_EXIST})
             self._end_auction_event.set()
             sys.exit(1)
-    self.bidders = [bid["id"]
-                    for bid in self._auction_data["data"]["bids"]
-                    if bid.get('status', 'active') == 'active']
-    self.bidders_count = len(self.bidders)
+    self.bidders_count = len([
+        bid["id"] for bid in self._auction_data["data"]["bids"]
+        if bid.get('status', 'active') == 'active'
+    ])
     LOGGER.info("Bidders count: {}".format(self.bidders_count),
                 extra={"JOURNAL_REQUEST_ID": self.request_id,
                        "MESSAGE_ID": AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS})
@@ -113,7 +113,7 @@ def prepare_auction_document(self):
          "stages": [],
          "tenderID": self._auction_data["data"].get("tenderID", ""),
          "procurementMethodType": self._auction_data["data"].get("procurementMethodType", "default"),
-         "TENDERS_API_VERSION": self.worker_defaults["TENDERS_API_VERSION"],
+         "TENDERS_API_VERSION": self.worker_defaults["resource_api_version"],
          "initial_bids": [],
          "current_stage": -1,
          "results": [],
@@ -169,18 +169,18 @@ def prepare_auction_and_participation_urls(self):
                        "MESSAGE_ID": AUCTION_WORKER_SET_AUCTION_URLS})
     LOGGER.info(repr(patch_data))
     make_request(self.tender_url + '/auction', patch_data,
-                 user=self.worker_defaults["TENDERS_API_TOKEN"],
+                 user=self.worker_defaults["resource_api_token"],
                  request_id=self.request_id, session=self.session)
 
 
-def post_results_data(self, with_auctions_results=True):
+def post_results_data(self, with_auction_results=True):
+    all_bids = self.auction_document["results"]
 
-    if with_auctions_results:
-        for index, bid_info in enumerate(self._auction_data["data"]["bids"]):
-            if bid_info.get('status', 'active') == 'active':
-                auction_bid_info = get_latest_bid_for_bidder(self.auction_document["results"], bid_info["id"])
-                self._auction_data["data"]["bids"][index]["value"]["amount"] = auction_bid_info["amount"]
-                self._auction_data["data"]["bids"][index]["date"] = auction_bid_info["time"]
+    for index, bid_info in enumerate(self._auction_data["data"]["bids"]):
+        if bid_info.get('status', 'active') == 'active':
+            auction_bid_info = get_latest_bid_for_bidder(all_bids, bid_info["id"])
+            self._auction_data["data"]["bids"][index]["value"]["amount"] = auction_bid_info["amount"]
+            self._auction_data["data"]["bids"][index]["date"] = auction_bid_info["time"]
 
     data = {'data': {'bids': self._auction_data["data"]['bids']}}
     LOGGER.info(
@@ -190,7 +190,7 @@ def post_results_data(self, with_auctions_results=True):
     )
     return make_request(
         self.tender_url + '/auction', data=data,
-        user=self.worker_defaults["TENDERS_API_TOKEN"],
+        user=self.worker_defaults["resource_api_token"],
         method='post',
         request_id=self.request_id, session=self.session
     )
@@ -200,7 +200,7 @@ def announce_results_data(self, results=None):
     if not results:
         results = get_tender_data(
             self.tender_url,
-            user=self.worker_defaults["TENDERS_API_TOKEN"],
+            user=self.worker_defaults["resource_api_token"],
             request_id=self.request_id,
             session=self.session
         )
