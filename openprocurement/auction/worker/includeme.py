@@ -1,8 +1,12 @@
 from openprocurement.auction.includeme import _register
+from openprocurement.auction.interfaces import IAuctionsServer
+from openprocurement.auction.worker.views import includeme
 
 
 def belowThreshold(components):
     _register(components, 'belowThreshold')
+    server = components.queryUtility(IAuctionsServer)
+    includeme(server)
 
 
 def aboveThresholdUA(components):
