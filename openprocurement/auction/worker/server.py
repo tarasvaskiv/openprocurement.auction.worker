@@ -9,7 +9,6 @@ from gevent.pywsgi import WSGIServer, WSGIHandler
 from gevent import socket
 import errno
 from datetime import datetime, timedelta
-from pytz import timezone
 from openprocurement.auction.worker.forms import BidsForm, form_handler
 from openprocurement.auction.helpers.system import get_lisener
 from openprocurement.auction.utils import create_mapping,\
@@ -108,9 +107,14 @@ def authorized():
         app.logger.info("Get response from Oauth: {}".format(repr(resp)))
         session['remote_oauth'] = (resp['access_token'], '')
         session['client_id'] = os.urandom(16).encode('hex')
+    else:
+        app.logger.info("Error on user authorization. Error: {}".format(
+            request.args.get('error', ''))
+            )
+        return abort(403, 'Access denied')
     bidder_data = get_bidder_id(app, session)
     app.logger.info("Bidder {} with client_id {} authorized".format(
-                    bidder_data['bidder_id'], session['client_id'],
+                    bidder_data.get('bidder_id'), session.get('client_id'),
                     ), extra=prepare_extra_journal_fields(request.headers))
 
     app.logger.debug("Session: {}".format(repr(session)))
@@ -191,7 +195,7 @@ def post_bid():
     if 'remote_oauth' in session and 'client_id' in session:
         bidder_data = get_bidder_id(app, session)
         if bidder_data and bidder_data['bidder_id'] == request.json['bidder_id']:
-            return jsonify(app.form_handler())            
+            return jsonify(app.form_handler())
         else:
             app.logger.warning("Client with client id: {} and bidder_id {} wants post bid but response status from Oauth".format(
                 session.get('client_id', 'None'), request.json.get('bidder_id', 'None')
