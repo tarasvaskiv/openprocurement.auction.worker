@@ -11,10 +11,16 @@ services:
 env:
   global:
     - TZ=Europe/Kiev
+cache:
+  directories:
+    - eggs
 before_install:
+  - pip install setuptools==36.5.0
+  - python2 bootstrap.py
   - mv openprocurement/auction/worker/tests/data/auction_worker_travis.yaml openprocurement/auction/worker/tests/data/auction_worker_defaults.yaml
 install:
-  - pip install -r requirements.txt
+  - bin/buildout -N
   - curl -X PUT 0.0.0.0:5984/auctions
 script:
-  - bin/pytest .
+  - bin/pytest openprocurement/auction/worker/tests
+
