@@ -1,12 +1,12 @@
 import pytest
-from mock import MagicMock
-
+import json
+from mock import MagicMock, patch
 from wtforms.validators import ValidationError
 from openprocurement.auction.worker.tests.data.data import (
     test_auction_document
 )
 from openprocurement.auction.worker.forms import (
-    validate_bid_value, BidsForm
+    validate_bid_value, BidsForm, form_handler
 )
 
 
@@ -186,3 +186,46 @@ def test_bids_form(auction, features_auction):
     form.auction.bidders_coeficient = {'f7c8cd1d56624477af8dc3aa9c4b3ea3': 0.1}
     assert form.validate() is False
     assert form.errors == {'bid': [u'Stage not for bidding']}
+    form.document['stages'][test_auction_document['current_stage']]['type'] =\
+        'bids'
+
+
+def test_form_handler(app):
+    app.application.form_handler = form_handler
+    headers = {'Content-Type': 'application/json'}
+    s = {
+        'remote_oauth': (u'aMALGpjnB1iyBwXJM6betfgT4usHqw', ''),
+        'client_id': 'b3a000cdd006b4176cc9fafb46be0273'
+    }
+    data = {'bidder_id': 'f7c8cd1d56624477af8dc3aa9c4b3ea3', 'bid': -1}
+    with patch('openprocurement.auction.worker.server.session', s), \
+            patch('openprocurement.auction.worker.forms.session', s):
+        res = app.post('/postbid', data=json.dumps(data), headers=headers)
+    assert res.status == '200 OK'
+    assert res.status_code == 200
+    res_data = {'data': data}
+    res_data['status'] = 'ok'
+    assert json.loads(res.data) == res_data
+
+    data['bid'] = 2600000
+    with patch('openprocurement.auction.worker.server.session', s), \
+            patch('openprocurement.auction.worker.forms.session', s):
+        res = app.post('/postbid', data=json.dumps(data), headers=headers)
+    assert res.status == '200 OK'
+    assert res.status_code == 200
+    res_data = {'data': data}
+    res_data['status'] = 'ok'
+    assert json.loads(res.data) == res_data
+
+    data['bid'] = 123
+    with patch('openprocurement.auction.worker.server.session', s), \
+            patch('openprocurement.auction.worker.forms.session', s):
+        res = app.post('/postbid', data=json.dumps(data), headers=headers)
+    assert res.status == '200 OK'
+    assert res.status_code == 200
+    assert json.loads(res.data) == {
+        u'status': u'failed',
+        u'errors': {
+            u'bid': [u'Too low value']
+        }
+    }

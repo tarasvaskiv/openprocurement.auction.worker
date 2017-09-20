@@ -217,7 +217,7 @@ def test_server_postbid(app):
         res = app.post(
             '/postbid',
             data=json.dumps(
-                {'bidder_id': u'5675acc9232942e8940a034994ad883e'}
+                {'bidder_id': u'f7c8cd1d56624477af8dc3aa9c4b3ea3'}
             ),
             headers={'Content-Type': 'application/json'}
         )
@@ -249,7 +249,7 @@ def test_server_kickclient(app):
     }
     data = {
         'client_id': s['client_id'],
-        'bidder_id': u'5675acc9232942e8940a034994ad883e'
+        'bidder_id': u'f7c8cd1d56624477af8dc3aa9c4b3ea3'
     }
     headers = {'Content-Type': 'application/json'}
 

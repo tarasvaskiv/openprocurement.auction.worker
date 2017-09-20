@@ -16,10 +16,10 @@ from pytz import timezone as tz
 from openprocurement.auction.worker.auction import Auction, SCHEDULER
 from openprocurement.auction.worker.mixins import LOGGER
 from openprocurement.auction.worker.tests.data.data import (
-    tender_data, lot_tender_data, features_tender_data
+    tender_data, lot_tender_data, features_tender_data, test_auction_document
 )
 from openprocurement.auction.worker.server import (
-    app as worker_app, BidsForm, form_handler
+    app as worker_app, BidsForm
 )
 # from openprocurement.auction.tests.functional.main import update_auctionPeriod
 
@@ -133,6 +133,8 @@ def app():
         lot_id=False
     )
     app_auction.bidders_data = tender_data['data']['bids']
+    app_auction.db = MagicMock()
+    app_auction.db.get.return_value = test_auction_document
     worker_app.config.update(app_auction.worker_defaults)
     worker_app.logger_name = logger.name
     worker_app._logger = logger
@@ -156,12 +158,12 @@ def app():
     worker_app.remote_oauth.authorize.return_value = \
         redirect('https://my.test.url')
     worker_app.logins_cache[(u'aMALGpjnB1iyBwXJM6betfgT4usHqw', '')] = {
-        u'bidder_id': u'5675acc9232942e8940a034994ad883e',
+        u'bidder_id': u'f7c8cd1d56624477af8dc3aa9c4b3ea3',
         u'expires':
             (datetime.datetime.now(tzlocal()) + timedelta(0, 600)).isoformat()
     }
     worker_app.auction_bidders = {
-        u'5675acc9232942e8940a034994ad883e': {
+        u'f7c8cd1d56624477af8dc3aa9c4b3ea3': {
             'clients': {},
             'channels': {}
         }}
