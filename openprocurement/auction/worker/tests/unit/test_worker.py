@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from gevent.subprocess import Popen
 from contextlib import contextmanager
 from gevent import Greenlet, sleep
+from yaml import load
+
 
 from openprocurement.auction.utils import calculate_hash
 

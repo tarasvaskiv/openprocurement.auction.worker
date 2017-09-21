@@ -6,13 +6,20 @@ import pytest
 import yaml
 import couchdb
 
+from flask import redirect
+from mock import MagicMock
 from dateutil.tz import tzlocal
+from datetime import timedelta
 from StringIO import StringIO
+from pytz import timezone as tz
 
 from openprocurement.auction.worker.auction import Auction, SCHEDULER
 from openprocurement.auction.worker.mixins import LOGGER
 from openprocurement.auction.worker.tests.data.data import (
-    tender_data, lot_tender_data, features_tender_data
+    tender_data, lot_tender_data, features_tender_data, test_auction_document
+)
+from openprocurement.auction.worker.server import (
+    app as worker_app, BidsForm
 )
 # from openprocurement.auction.tests.functional.main import update_auctionPeriod
 
@@ -112,6 +119,55 @@ def logger():
 @pytest.fixture(scope='function')
 def scheduler():
     return SCHEDULER
+
+
+@pytest.fixture(scope='function')
+def app():
+    update_auctionPeriod(tender_data)
+    logger = MagicMock()
+    logger.name = 'some-logger'
+    app_auction = Auction(
+        tender_id=tender_data['data']['auctionID'],
+        worker_defaults=yaml.load(open(worker_defaults_file_path)),
+        auction_data=tender_data,
+        lot_id=False
+    )
+    app_auction.bidders_data = tender_data['data']['bids']
+    app_auction.db = MagicMock()
+    app_auction.db.get.return_value = test_auction_document
+    worker_app.config.update(app_auction.worker_defaults)
+    worker_app.logger_name = logger.name
+    worker_app._logger = logger
+    worker_app.config['auction'] = app_auction
+    worker_app.config['timezone'] = tz('Europe/Kiev')
+    worker_app.config['SESSION_COOKIE_PATH'] = '/{}/{}'.format(
+        'auctions', app_auction.auction_doc_id)
+    worker_app.config['SESSION_COOKIE_NAME'] = 'auction_session'
+    worker_app.oauth = MagicMock()
+    worker_app.bids_form = BidsForm
+    worker_app.form_handler = MagicMock()
+    worker_app.form_handler.return_value = {'data': 'ok'}
+    worker_app.remote_oauth = MagicMock()
+    worker_app.remote_oauth.authorized_response.side_effect = [None, {
+        u'access_token': u'aMALGpjnB1iyBwXJM6betfgT4usHqw',
+        u'token_type': u'Bearer',
+        u'expires_in': 86400,
+        u'refresh_token': u'uoRKeSJl9UFjuMwOw6PikXuUVp7MjX',
+        u'scope': u'email'
+    }]
+    worker_app.remote_oauth.authorize.return_value = \
+        redirect('https://my.test.url')
+    worker_app.logins_cache[(u'aMALGpjnB1iyBwXJM6betfgT4usHqw', '')] = {
+        u'bidder_id': u'f7c8cd1d56624477af8dc3aa9c4b3ea3',
+        u'expires':
+            (datetime.datetime.now(tzlocal()) + timedelta(0, 600)).isoformat()
+    }
+    worker_app.auction_bidders = {
+        u'f7c8cd1d56624477af8dc3aa9c4b3ea3': {
+            'clients': {},
+            'channels': {}
+        }}
+    yield worker_app.test_client()
 
 
 def pytest_addoption(parser):
