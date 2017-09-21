@@ -190,3 +190,44 @@ features_tender_data = {u'data': {u'auctionPeriod': {u'endDate': None,
            u'value': {u'amount': 500000.0,
                       u'currency': u'UAH',
                       u'valueAddedTaxIncluded': True}}}
+
+
+test_auction_document = {
+    'current_stage': 2,
+    'stages': [
+        {
+            "start": "2017-07-14T11:05:46+03:00",
+            "type": "pause",
+            "stage": "pause"
+        },
+        {
+            "bidder_id": "5675acc9232942e8940a034994ad883e",
+            "label": {
+                "ru": "Участник №1",
+                "en": "Bidder #1",
+                "uk": "Учасник №1"
+            },
+            "start": "2017-07-14T11:10:46+03:00",
+            "amount": 259500,
+            "time": "2017-07-12T11:36:23.148237+03:00",
+            "type": "bids"
+        },
+        {
+            "bidder_id": "f7c8cd1d56624477af8dc3aa9c4b3ea3",
+            "label": {
+                "ru": "Участник №2",
+                "en": "Bidder #2",
+                "uk": "Учасник №2"
+            },
+            "start": "2017-07-14T11:12:46+03:00",
+            "amount": 258500,
+            "time": "2017-07-12T13:56:44.366383+03:00",
+            "type": "bids"
+        }
+    ],
+    "minimalStep": {
+        "currency": "UAH",
+        "amount": 7500,
+        "valueAddedTaxIncluded": True
+    }
+}
