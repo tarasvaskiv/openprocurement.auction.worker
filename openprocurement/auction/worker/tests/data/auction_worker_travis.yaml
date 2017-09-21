@@ -15,7 +15,6 @@ OAUTH_AUTHORIZE_URL: "http://localhost:9003/oauth/authorize"
 STARTS_PORT: 9010
 WORKER_BIND_IP: "localhost"
 REDIS_URL: "redis://:12345@0.0.0.0:9002/0"
-sentinel: [["0.0.0.0", 9007]]
 redis_password: "12345"
 redis_database: "0"
 sentinel_cluster_name: "redis-cluster"
