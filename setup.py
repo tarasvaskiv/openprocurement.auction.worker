@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-VERSION = '1.0.1a1.dev2+eauctions'
+VERSION = '1.0.2a1.dev1+eauctions'
 
 INSTALL_REQUIRES = [
     'setuptools',
