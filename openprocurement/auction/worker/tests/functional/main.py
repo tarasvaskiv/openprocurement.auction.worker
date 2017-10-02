@@ -14,7 +14,7 @@ from dateutil.tz import tzlocal
 from pkg_resources import iter_entry_points
 from gevent.subprocess import check_output, sleep
 
-from openprocurement.auction.tests.main import update_auctionPeriod
+from openprocurement.auction.tests.utils import update_auctionPeriod
 
 
 PWD = os.path.dirname(os.path.realpath(__file__))
