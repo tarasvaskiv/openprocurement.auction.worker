@@ -19,7 +19,7 @@ from openprocurement.auction.worker.tests.data.data import (
 from openprocurement.auction.worker.server import (
     app as worker_app, BidsForm
 )
-# from openprocurement.auction.tests.functional.main import update_auctionPeriod
+# from openprocurement.auction.tests.utils import update_auctionPeriod
 
 
 def update_auctionPeriod(data):
