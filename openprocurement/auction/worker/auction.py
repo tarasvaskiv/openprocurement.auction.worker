@@ -315,3 +315,37 @@ class Auction(DBServiceMixin,
         else:
             LOGGER.info("Auction {} not found".format(self.auction_doc_id),
                         extra={'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND})
+
+    def post_audit(self):
+        self.generate_request_id()
+        auction_data = self.get_auction_document()
+        self._auction_data = {"data": auction_data}
+        self.prepare_audit()
+        self.approve_audit_info_on_announcement()
+        self.audit['timeline']['auction_start']['time'] = self.auction_document["stages"][0]['start']
+        # Add initial bids
+        for index, bid in enumerate(self._auction_data['data']['initial_bids']):
+            audit_info = {
+                "bidder": bid["bidder_id"],
+                "date": bid["time"],
+                "amount": bid['amount']
+            }
+            self.audit['timeline']['auction_start']['initial_bids'].append(
+                audit_info
+            )
+        self.rounds_stages = []
+        self.bidders_count = len(self._auction_data['data']['initial_bids'])
+        for stage in range((self.bidders_count + 1) * ROUNDS + 1):
+            if (stage + self.bidders_count) % (self.bidders_count + 1) == 0:
+                self.rounds_stages.append(stage)
+        for index, stage in enumerate(self.auction_document['stages']):
+            if stage['type'] == 'bids':
+                self.current_stage = index
+                self.current_round = self.get_round_number(
+                    self.current_stage
+                )
+                self.approve_audit_info_on_bid_stage()
+        self.approve_audit_info_on_bid_stage()
+        LOGGER.info('Audit data: \n {}'.format(yaml_dump(self.audit)),
+                    extra={"JOURNAL_REQUEST_ID": self.request_id})
+        self.put_auction_data()
