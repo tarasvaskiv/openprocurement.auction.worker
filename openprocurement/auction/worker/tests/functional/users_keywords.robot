@@ -14,7 +14,7 @@
 Залогуватись користувачем
     [Arguments]    ${user_id}
     Go to       ${USERS['${user_id}']['login_url']}
-    Wait Until Page Contains       Дякуємо за використання нашої системи електронних закупівель
+    Wait Until Page Contains       Дякуємо за використання електронної торгової системи ProZorro.Продажі
     Highlight Elements With Text On Time          Так
     Capture Page Screenshot
     Click Element              confirm
