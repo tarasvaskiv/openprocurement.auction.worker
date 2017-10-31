@@ -322,6 +322,7 @@ class Auction(DBServiceMixin,
         self._auction_data = {"data": auction_data}
         self.prepare_audit()
         self.approve_audit_info_on_announcement()
+        self.audit['timeline']['auction_start']['time'] = self.auction_document["stages"][0]['start']
         # Add initial bids
         for index, bid in enumerate(self._auction_data['data']['initial_bids']):
             audit_info = {
