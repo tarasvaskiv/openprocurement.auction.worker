@@ -12,6 +12,7 @@ from gevent.lock import BoundedSemaphore
 from yaml import safe_dump as yaml_dump
 from requests import Session as RequestsSession
 from dateutil.tz import tzlocal
+from dateutil import parser
 from barbecue import cooking
 from apscheduler.schedulers.gevent import GeventScheduler
 
@@ -344,8 +345,23 @@ class Auction(DBServiceMixin,
                 self.current_round = self.get_round_number(
                     self.current_stage
                 )
-                self.approve_audit_info_on_bid_stage()
-        self.approve_audit_info_on_bid_stage()
+                turn_in_round = self.current_stage - (
+                    self.current_round * (self.bidders_count + 1) - self.bidders_count
+                ) + 1
+                round_label = 'round_{}'.format(self.current_round)
+                turn_label = 'turn_{}'.format(turn_in_round)
+                self.audit['timeline'][round_label][turn_label] = {
+                    'time': self.auction_document["stages"][self.current_stage].get('start', ''),
+                    'bidder': self.auction_document["stages"][self.current_stage].get('bidder_id', '')
+                }
+                if self.auction_document["stages"][self.current_stage].get('changed', False):
+                    self.audit['timeline'][round_label][turn_label]["bid_time"] = \
+                    self.auction_document["stages"][self.current_stage]['time']
+                    self.audit['timeline'][round_label][turn_label]["amount"] = \
+                    self.auction_document["stages"][self.current_stage]['amount']
         LOGGER.info('Audit data: \n {}'.format(yaml_dump(self.audit)),
                     extra={"JOURNAL_REQUEST_ID": self.request_id})
-        self.put_auction_data()
+        if self.worker_defaults.get('with_document_service', False):
+            self.upload_audit_file_with_document_service()
+        else:
+            self.upload_audit_file_without_document_service()
