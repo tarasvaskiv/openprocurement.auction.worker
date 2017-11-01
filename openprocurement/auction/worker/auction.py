@@ -351,7 +351,7 @@ class Auction(DBServiceMixin,
                 round_label = 'round_{}'.format(self.current_round)
                 turn_label = 'turn_{}'.format(turn_in_round)
                 self.audit['timeline'][round_label][turn_label] = {
-                    'time': self.auction_document["stages"][self.current_stage].get('start', ''),
+                    'time': self.auction_document["stages"][self.current_stage].get('time', ''),
                     'bidder': self.auction_document["stages"][self.current_stage].get('bidder_id', '')
                 }
                 if self.auction_document["stages"][self.current_stage].get('changed', False):
