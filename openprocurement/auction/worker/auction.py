@@ -35,10 +35,11 @@ from openprocurement.auction.worker.mixins import\
     StagesServiceMixin, ROUNDS, TIMEZONE
 from openprocurement.auction.worker.utils import \
     prepare_initial_bid_stage, prepare_results_stage
-
+from openprocurement.auction.worker.auctions import\
+    simple
 from openprocurement.auction.utils import\
     get_latest_bid_for_bidder, sorting_by_amount,\
-    sorting_start_bids_by_amount, delete_mapping
+    sorting_start_bids_by_amount, delete_mapping, get_tender_data
 
 
 LOGGER = logging.getLogger('Auction Worker')
@@ -322,7 +323,16 @@ class Auction(DBServiceMixin,
         auction_data = self.get_auction_document()
         self._auction_data = {"data": auction_data}
         self.prepare_audit()
-        self.approve_audit_info_on_announcement()
+        results = get_tender_data(
+            self.tender_url,
+            user=self.worker_defaults["resource_api_token"],
+            request_id=self.request_id,
+            session=self.session
+        )
+        bids_information = dict([(bid["id"], bid)
+                                 for bid in results["data"]["bids"]
+                                 if bid.get("status", "active") in ("active", "invalid")])
+        self.approve_audit_info_on_announcement(approved=bids_information)
         self.audit['timeline']['auction_start']['time'] = self.auction_document["stages"][0]['start']
         # Add initial bids
         for index, bid in enumerate(self._auction_data['data']['initial_bids']):
