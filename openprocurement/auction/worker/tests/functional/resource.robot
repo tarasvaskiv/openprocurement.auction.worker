@@ -7,7 +7,7 @@ Library        openprocurement.auction.worker.tests.functional.service_keywords
 
 *** Variables ***
 ${USERS}
-${BROWSER}      chrome 
+${BROWSER}      phantomjs
 
 *** Keywords ***
 Підготовка тесту
