@@ -17,7 +17,7 @@ def prepare_tender_data():
         return json.load(tender_file)["data"]
 
 
-def prepare_users_data(tender_data):
+def prepare_users_data(tender_data, auction_id):
     auction_worker_defaults = BuiltIn().get_variable_value("${auction_worker_defaults}")
     with open(auction_worker_defaults) as auction_worker_defaults_file:
         auction_worker_defaults_info = yaml.load(auction_worker_defaults_file)
@@ -27,7 +27,6 @@ def prepare_users_data(tender_data):
             lot_id_appendix = "_" + tender_data["lots"][0]["id"]
         else:
             lot_id_appendix = ""
-        auction_id = "11111111111111111111111111111111"
 
         users_data[bid["id"]] = {
             'login_url': auction_worker_defaults_info['AUCTIONS_URL'].format(auction_id=auction_id) + lot_id_appendix + '/login?bidder_id={}&hash={}'.format(

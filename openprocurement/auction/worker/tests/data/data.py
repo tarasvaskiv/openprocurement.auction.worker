@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+SIMPLE_TENDER_ID = '1' * 32
+MULTILOT_TENDER_ID = '2' * 32
+
 tender_data = {u'data': {u'auctionPeriod': {u'endDate': None,
                               u'startDate': u'2017-07-03T17:32:05.661358+03:00'},
            u'bids': [{u'date': u'2014-11-19T08:22:21.726234+00:00',
