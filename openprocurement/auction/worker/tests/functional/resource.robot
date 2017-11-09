@@ -18,7 +18,7 @@ ${BROWSER}      phantomjs
 Отримати вхідні дані
     ${TENDER}=  prepare_tender_data
     Set Global Variable   ${TENDER}
-    ${USERS}=  prepare_users_data   ${TENDER}
+    ${USERS}=  prepare_users_data   ${TENDER}  ${auction_id}
     Set Global Variable   ${USERS}
 
 Залогуватись користувачами

@@ -57,7 +57,7 @@ class Auction(DBServiceMixin,
     """Auction Worker Class"""
 
     def __init__(self, tender_id,
-                 worker_defaults={},
+                 worker_defaults,
                  auction_data={},
                  lot_id=None):
         super(Auction, self).__init__()
