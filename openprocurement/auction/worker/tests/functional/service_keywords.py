@@ -2,7 +2,7 @@ import json
 import yaml
 
 from robot.libraries.BuiltIn import BuiltIn
-from Selenium2Library import utils
+from SeleniumLibrary import utils
 
 from openprocurement.auction.utils import calculate_hash
 
@@ -46,13 +46,13 @@ def convert_amount_to_number(amount_string):
 
 def Highlight_Element(locator):
     seleniumlib = BuiltIn().get_library_instance('Selenium2Library')
-    element = seleniumlib._element_find(locator, True, True)
+    element = seleniumlib._element_finder.find(locator, None, True, True)
     seleniumlib._current_browser().execute_script("arguments[0].style['outline'] = '3px dotted red';", element)
 
 
 def Clear_Highlight_Element(locator):
     seleniumlib = BuiltIn().get_library_instance('Selenium2Library')
-    element = seleniumlib._element_find(locator, True, True)
+    element = seleniumlib._element_finder.find(locator, None, True, True)
     seleniumlib._current_browser().execute_script("arguments[0].style['outline'] = '';", element)
 
 
@@ -60,7 +60,7 @@ def Highlight_Elements_With_Text_On_Time(text, time=2):
     from time import sleep
     seleniumlib = BuiltIn().get_library_instance('Selenium2Library')
     locator = u"xpath=//*[contains(text(), {})]".format(utils.escape_xpath_value(text))
-    elements = seleniumlib._element_find(locator, False, False)
+    elements = seleniumlib._element_finder.find(locator, None, False, False)
     for element in elements:
         seleniumlib._current_browser().execute_script("arguments[0].style['outline'] = '3px dotted red';", element)
     sleep(time)
