@@ -32,6 +32,7 @@ def prepare_users_data(tender_data, auction_id):
             'login_url': auction_worker_defaults_info['AUCTIONS_URL'].format(auction_id=auction_id) + lot_id_appendix + '/login?bidder_id={}&hash={}'.format(
                 bid["id"], calculate_hash(bid["id"], auction_worker_defaults_info["HASH_SECRET"])
             ),
+            'start_url': auction_worker_defaults_info['AUCTIONS_URL'].format(auction_id=auction_id) + lot_id_appendix,
             'amount': bid['value']['amount'],
             'position': positions[index],
             'size': size
@@ -45,20 +46,20 @@ def convert_amount_to_number(amount_string):
 
 
 def Highlight_Element(locator):
-    seleniumlib = BuiltIn().get_library_instance('Selenium2Library')
+    seleniumlib = BuiltIn().get_library_instance('SeleniumLibrary')
     element = seleniumlib._element_finder.find(locator, None, True, True)
     seleniumlib._current_browser().execute_script("arguments[0].style['outline'] = '3px dotted red';", element)
 
 
 def Clear_Highlight_Element(locator):
-    seleniumlib = BuiltIn().get_library_instance('Selenium2Library')
+    seleniumlib = BuiltIn().get_library_instance('SeleniumLibrary')
     element = seleniumlib._element_finder.find(locator, None, True, True)
     seleniumlib._current_browser().execute_script("arguments[0].style['outline'] = '';", element)
 
 
 def Highlight_Elements_With_Text_On_Time(text, time=2):
     from time import sleep
-    seleniumlib = BuiltIn().get_library_instance('Selenium2Library')
+    seleniumlib = BuiltIn().get_library_instance('SeleniumLibrary')
     locator = u"xpath=//*[contains(text(), {})]".format(utils.escape_xpath_value(text))
     elements = seleniumlib._element_finder.find(locator, None, False, False)
     for element in elements:

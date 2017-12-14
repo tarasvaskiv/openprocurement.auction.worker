@@ -1,6 +1,6 @@
 *** Settings ***
-Library        Selenium2Library
-Library        Selenium2Screenshots
+Library        SeleniumLibrary
+Library        Collections
 Library        DebugLibrary
 Resource       users_keywords.robot
 Library        openprocurement.auction.worker.tests.functional.service_keywords
