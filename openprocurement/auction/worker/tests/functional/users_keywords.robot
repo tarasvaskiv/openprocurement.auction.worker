@@ -7,7 +7,7 @@
 
 Підготувати клієнт для користувача
     [Arguments]    ${user_id}
-    Open Browser  http://prozorro.org/    ${BROWSER}  ${user_id}  remote_url=${remote_url}  desired_capabilities=${desired_capabilities}
+    Open Browser    ${USERS['${user_id}']['start_url']}    ${BROWSER}  ${user_id}  remote_url=${remote_url}  desired_capabilities=${desired_capabilities}
     Set Window Position   @{USERS['${user_id}']['position']}
     Set Window Size       @{USERS['${user_id}']['size']}
 
