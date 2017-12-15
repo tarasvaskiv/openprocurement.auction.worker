@@ -18,7 +18,7 @@ CWD = os.getcwd()
 def run_simple(worker_cmd, tender_file_path, auction_id):
     with update_auctionPeriod(tender_file_path, auction_type='simple') as auction_file:
         check_output(worker_cmd.format(CWD, auction_id, auction_file).split())
-    sleep(2)
+    sleep(10)
 
 
 def run_multilot(worker_cmd, tender_file_path, auction_id):
@@ -30,7 +30,7 @@ def run_multilot(worker_cmd, tender_file_path, auction_id):
             CWD, auction_id, auction_file, lot_id
         )
         check_output(command_line.split())
-    sleep(2)
+    sleep(10)
 
 
 def includeme():
