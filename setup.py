@@ -21,8 +21,7 @@ ENTRY_POINTS = {
         'auction_worker = openprocurement.auction.worker.cli:main',
     ],
     'openprocurement.auction.auctions': [
-        'dgfOtherAssets = openprocurement.auction.worker.includeme:dgfOtherAssets',
-        'dgfFinancialAssets = openprocurement.auction.worker.includeme:dgfFinancialAssets',
+        'english = openprocurement.auction.worker.includeme:english',
     ],
     'openprocurement.auction.robottests': [
         'insider = openprocurement.auction.worker.tests.functional.main:includeme'
