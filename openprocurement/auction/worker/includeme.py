@@ -27,3 +27,6 @@ def competitiveDialogueUA(components):
 
 def aboveThresholdUAdefense(components):
     _register(components, 'aboveThresholdUA.defense')
+
+def closeFrameworkAgreementUA(components):
+    _register(components, 'closeFrameworkAgreementUA')
