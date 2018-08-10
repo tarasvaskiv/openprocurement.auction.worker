@@ -8,6 +8,7 @@ INSTALL_REQUIRES = [
     'openprocurement.auction',
     'WTForms',
     'WTForms-JSON',
+    'spiffworkflow',
 ]
 EXTRAS_REQUIRE = {
     'test': [
